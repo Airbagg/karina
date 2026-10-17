@@ -291,3 +291,26 @@ textarea.in { min-height: 76px; }
 @media (max-width: 899px) { .les .st { display: flex; flex-direction: column; align-items: flex-end; } .les .st .acts { flex-direction: column; align-items: flex-end; gap: 0; margin-top: 2px; } .les .st .acts .lnk { min-height: 30px; } }
 @media (min-width: 900px) { .big { font-size: 56px; } }
 .shot.phone body { width: 390px; position: relative; }
+
+/* ---------- прогресс: строки, график ---------- */
+.prow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border-bottom: 1px solid var(--line); min-height: 56px; transition: background .15s; }
+.prow:hover, .prg:hover, .mock:hover { background: rgba(0,0,0,.02); }
+.prow .pn { flex: 1; min-width: 0; }
+.prow .pn b { display: block; font-size: 15px; font-weight: 600; }
+.prow .pn small { font-size: 12.5px; color: var(--mute); }
+.prow .spark { color: var(--ink); flex: none; }
+.prow .pv { font-size: 17px; font-weight: 700; white-space: nowrap; }
+.prow .pv small { font-size: 12.5px; color: var(--mute); font-weight: 500; }
+.prow .chev { color: #BDB5AC; width: 16px; height: 16px; }
+.dl { font-size: 12.5px; font-weight: 700; margin-left: 6px; }
+.dl.up { color: var(--green); } .dl.dn { color: var(--red); }
+.prg, .mock { width: 100%; display: block; }
+.mock { display: flex; }
+.pbig { font-size: 44px; font-weight: 800; letter-spacing: -.03em; line-height: 1; margin-top: 18px; }
+.pbig small { font-size: 16px; color: var(--mute); font-weight: 600; letter-spacing: 0; }
+.pbig .dl { font-size: 16px; margin-left: 10px; letter-spacing: 0; }
+.chartbox { margin-top: 18px; padding: 14px 0 4px; display: flex; justify-content: center; border-top: 1px solid var(--line); }
+.chart .cv { font: 700 12px var(--ui); fill: var(--ink); }
+.chart .cl { font: 500 11px var(--ui); fill: var(--mute); }
+.chart rect { transition: height .4s var(--ease), y .4s var(--ease); }
+.les .t > b { font-size: 13px; font-weight: 500; color: var(--mute); }

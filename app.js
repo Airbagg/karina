@@ -31,49 +31,35 @@ const code4 = () => String(Math.floor(1000 + Math.random() * 9000));
 /* ---------- пример данных ---------- */
 function L(date, time, status, topic = '', hw = '', note = '', extra = {}) { return { id: uid(), date, time, status, topic, hw, note, ...extra }; }
 function seed() {
-  const masha = {
-    id: 'masha', name: 'Маша', goal: 'английский, подготовка к ЕГЭ', token: 'k7Qx9mP2vR4t', code: '1234', open: true, phones: ['+79000000000', '+79161234567'],
-    schedule: { days: [2, 5], time: '17:00' },
-    payments: [{ date: '2026-09-10', n: 8 }, { date: '2026-10-05', n: 4 }],
+  /* Данные Алины из таблицы Карины дословно. Где в таблице пусто, здесь пусто. Время 17:00 условное: в таблице времени нет.
+     Размер пакетов в таблице не указан, стоит 4 + 4 до уточнения. Дат замеров прогресса в таблице нет. */
+  const alina = {
+    id: 'alina', name: 'Алина', goal: 'английский, подготовка к ЕГЭ', token: 'k7Qx9mP2vR4t', code: '1234', open: true, phones: ['+79000000000'],
+    schedule: { days: [2, 5], time: '17:00' }, packNote: 'размер пакета уточнить',
+    payments: [{ date: '2026-09-10', n: 4 }, { date: '2026-09-25', n: 4 }],
     lessons: [
-      L('2026-09-11', '17:00', 'done', 'Hobbies. Лексика: виды хобби, фразовые глаголы', 'Progress me, Hobbies, sections 1, 2, 6, 5', 'Не начали грамматику'),
-      L('2026-09-15', '17:00', 'done', 'Hobbies. Лексика, повторение. Грамматика present simple / continuous', 'То же самое + грамматика на платформе'),
-      L('2026-09-18', '17:00', 'done', 'Hobbies. Повтор времён. Разбор задания speaking 3', 'Грамматика, учить лексику по преимуществам хобби'),
-      L('2026-09-23', '17:00', 'done', 'Hobbies. Преимущества и недостатки'),
+      L('2026-09-11', '17:00', 'done', 'Hobbies. Лексика: виды хобби, фразовые глаголы', 'Progress me Hobbies sections 1,2,6,5', 'Не начали грамматику'),
+      L('2026-09-15', '17:00', 'done', 'Hobbies. Лексика: виды хобби, фразовые глаголы повторение. Грамматика present simple/continuous', 'то же самое + грамматика на платформе'),
+      L('2026-09-18', '17:00', 'done', 'Hobbies. Повтор времен. Разбор задания speaking 3', 'грамматика, учить лексику по преимуществам хобби'),
+      L('2026-09-23', '17:00', 'done', 'Hobbies. Преимущества и недостатки.'),
       L('2026-09-25', '17:00', 'done', 'Hobbies. Преимущества и недостатки. Разбор задания 4 устной части'),
-      L('2026-09-29', '17:00', 'done', 'Essay, задание 38: структура', 'Написать вступление по образцу'),
-      L('2026-10-02', '17:00', 'moved', '', '', 'Проспала', { movedTo: '2026-10-13' }),
-      L('2026-10-06', '17:00', 'done', 'Grammar: passive voice', 'Progress me, Grammar, section 3'),
+      L('2026-09-29', '17:00', 'done'),
+      L('2026-10-02', '17:00', 'moved', '', '', 'проспала', { movedTo: '2026-10-13' }),
+      L('2026-10-06', '17:00', 'done'),
       L('2026-10-08', '17:00', 'moved', '', '', '', { movedTo: '2026-10-16' }),
-      L('2026-10-09', '17:00', 'done', 'Letter, задание 37: письмо другу', 'Письмо по теме Hobbies'),
-      L('2026-10-13', '17:00', 'done', 'Essay: аргументы и примеры', 'Эссе по плану, 200-250 слов', 'Хорошо держит структуру', { from: '2026-10-02' }),
+      L('2026-10-13', '17:00', 'done', '', '', '', { from: '2026-10-02' }),
       L('2026-10-16', '17:00', 'plan', '', '', '', { from: '2026-10-08' }),
-      L('2026-10-20', '17:00', 'plan', 'Essay: разбор ошибок по критериям', '', '', { auto: true }),
-      L('2026-10-23', '17:00', 'plan', 'Listening, задания 1-3', '', '', { auto: true }),
+      L('2026-10-20', '17:00', 'plan', '', '', '', { auto: true }),
+      L('2026-10-23', '17:00', 'plan', '', '', '', { auto: true }),
+      L('2026-10-27', '17:00', 'plan', '', '', '', { auto: true }),
     ],
     progress: [
-      { id: uid(), date: '2026-09-12', sec: 'Grammar & Vocabulary', score: 10, max: 18 },
-      { id: uid(), date: '2026-09-26', sec: 'Grammar & Vocabulary', score: 12, max: 18 },
-      { id: uid(), date: '2026-10-10', sec: 'Grammar & Vocabulary', score: 16, max: 18 },
-      { id: uid(), date: '2026-09-12', sec: 'Essay', score: 5, max: 14 },
-      { id: uid(), date: '2026-09-26', sec: 'Essay', score: 5, max: 14 },
-      { id: uid(), date: '2026-10-10', sec: 'Essay', score: 8, max: 14 },
+      ...[10, 12, 16].map((v, i) => ({ id: uid(), date: '', ord: i, sec: 'Grammar & Vocabulary', score: v, max: 18 })),
+      ...[5, 5, 0, 8, 8].map((v, i) => ({ id: uid(), date: '', ord: i, sec: 'Essay', score: v, max: 14 })),
     ],
-    mocks: [{ id: uid(), date: '2026-10-03', p: 75, s: 94, link: 'https://example.com/proverka' }],
+    mocks: [{ id: uid(), date: '2026-03-08', p: 75, s: 94, link: 'есть' }],
   };
-  const simple = (id, name, goal, days, time, pays, done, topics) => ({
-    id, name, goal, token: token(), code: code4(), open: true, phones: ['+7999' + code4() + '000'], schedule: { days, time }, payments: pays,
-    lessons: done.map((d, i) => L(d, time, 'done', topics[i % topics.length])), progress: [], mocks: [],
-  });
-  const st = [
-    masha,
-    simple('petya', 'Петя', 'английский, 8 класс', [6], '15:00', [{ date: '2026-09-12', n: 4 }], ['2026-09-19', '2026-09-26', '2026-10-03', '2026-10-10'], ['Present perfect', 'Неправильные глаголы', 'Чтение: короткие тексты', 'Контрольная по модулю']),
-    simple('timur', 'Тимур', 'подготовка к ЕГЭ', [3, 6], '11:30', [{ date: '2026-10-06', n: 8 }], ['2026-10-07', '2026-10-10', '2026-10-14'], ['Reading, задания 10-17', 'Grammar, задания 19-24', 'Essay: план']),
-    simple('anya', 'Аня', 'разговорный, B1', [3, 6], '18:00', [{ date: '2026-09-19', n: 8 }], ['2026-09-23', '2026-09-26', '2026-09-30', '2026-10-03', '2026-10-07', '2026-10-10', '2026-10-14'], ['Сериалы: Friends', 'Путешествия', 'Small talk', 'Рассказ о себе']),
-    simple('oleg', 'Олег', 'собеседование, B2', [1], '19:30', [{ date: '2026-10-01', n: 8 }], ['2026-10-12'], ['Рассказ о проектах']),
-  ];
-  st.forEach(s => regen(s));
-  return { students: st };
+  return { students: [alina] };
 }
 
 /* будущие уроки по расписанию: на 4 недели вперёд; перенесённые и правленные руками не трогаем */
@@ -108,8 +94,7 @@ function calc(s) {
 function lastHW(s) {
   const done = s.lessons.filter(l => l.status === 'done' && l.hw).sort(byDT).pop();
   if (!done) return null;
-  const nx = s.lessons.filter(l => l.status === 'plan' && l.date > done.date).sort(byDT)[0];
-  return { text: done.hw, due: nx ? nx.date : null, from: done.date };
+  return { text: done.hw, from: done.date };
 }
 
 /* ---------- состояние ---------- */
@@ -121,7 +106,7 @@ const store = {
 function load() {
   data = store.get(KEY) || seed();
   auth = store.get(KEY + ':auth') || { k: false, s: {} };
-  ui = { role: 'k', ktab: 'students', sid: null, dsid: 'masha', stab: 'now', stoken: 'k7Qx9mP2vR4t', more: {}, push: 0 };
+  ui = { role: 'k', ktab: 'students', sid: null, dsid: 'alina', stab: 'now', stoken: 'k7Qx9mP2vR4t', more: {}, push: 0 };
 }
 function save() { store.set(KEY, data); store.set(KEY + ':auth', auth); }
 const S = id => data.students.find(s => s.id === id);
@@ -158,15 +143,15 @@ function remBlock(s, c, student) {
   else if (!student) note = `<div class="okline">Все ближайшие уроки оплачены</div>`;
   return `<div class="big num ${r === 0 ? 'zero' : ''}">${r}<small>${word}</small></div>
     <div class="bar" style="height:6px;margin-top:14px"><i style="width:${pct}%${r <= 1 ? ';background:var(--red)' : ''}"></i></div>
-    <div class="legend">${c.lastPack ? `<span>пакет ${c.lastPack} ${plural(c.lastPack, 'урок', 'урока', 'уроков')}</span><span>проведено ${Math.max(c.of - r, 0)}</span>` : ''}<span>осталось ${r}</span></div>${note}`;
+    <div class="legend">${c.lastPack ? `<span>пакет ${c.lastPack} ${plural(c.lastPack, 'урок', 'урока', 'уроков')}</span><span>проведено ${Math.max(c.of - r, 0)}</span>` : ''}<span>осталось ${r}</span>${!student && s.packNote ? `<span>${s.packNote}</span>` : ''}</div>${note}`;
 }
 function payTag(c, l) { return c.paidIds.has(l.id) ? '<span class="st g">оплачен</span>' : '<span class="st r">не оплачен</span>'; }
 function upRow(s, c, l, karina) {
-  const topic = l.topic ? esc(l.topic) : '<span class="mt">тема по плану</span>';
+  const topic = l.topic ? esc(l.topic) : '';
   const moved = l.from ? `<div class="hwl"><em>перенос с ${dms(l.from)}</em></div>` : '';
   const acts = karina ? `<div class="acts"><button class="lnk" data-act="edit" data-l="${l.id}">изменить</button><button class="lnk" data-act="mark" data-mode="move" data-l="${l.id}">перенести</button><button class="lnk" data-act="mark" data-mode="cancel" data-l="${l.id}">отменить</button></div>` : '';
   return `<div class="les" data-row="${l.id}"><div class="d"><b class="num">${D(l.date).getDate()}</b><span>${wd(l.date)}</span></div>
-    <div class="t"><b class="num">${l.time}</b><div class="tp">${topic}</div>${moved}</div><div class="st">${payTag(c, l)}${acts}</div></div>`;
+    <div class="t"><b class="num">${l.time}</b>${topic ? `<div class="tp">${topic}</div>` : ''}${moved}</div><div class="st">${payTag(c, l)}${acts}</div></div>`;
 }
 function statusTag(l) {
   if (l.status === 'moved') return `<span class="tag">перенос на ${dms(l.movedTo)}${l.burn ? ', урок списан' : ''}</span>`;
@@ -178,7 +163,7 @@ function statusTag(l) {
 }
 function pastRow(l, karina) {
   const tag = statusTag(l);
-  let topic = l.topic ? `<div class="tp">${esc(l.topic)}</div>` : l.status === 'done' ? '<div class="tp mute">тема не записана</div>' : l.status === 'plan' ? `<div class="tp mute">${karina ? 'отметьте, как прошёл урок' : 'тема появится после урока'}</div>` : '';
+  let topic = l.topic ? `<div class="tp">${esc(l.topic)}</div>` : l.status === 'plan' ? `<div class="tp mute">${karina ? 'отметьте, как прошёл урок' : 'тема появится после урока'}</div>` : '';
   const hw = l.hw ? `<div class="hwl"><em>ДЗ:</em> ${esc(l.hw)}</div>` : '';
   const own = karina && l.note ? `<div class="own"><em>только для тебя:</em> ${esc(l.note)}</div>` : '';
   const cls = l.status === 'moved' ? 'moved' : (l.status === 'burn' || l.status === 'free') ? 'cancel' : '';
@@ -196,19 +181,44 @@ function months(list, karina) {
     return `<h2><span>${MN[m - 1]}${y !== 2026 ? ' ' + y : ''}</span><span>${n} ${plural(n, 'урок', 'урока', 'уроков')}</span></h2>${ls.map(l => pastRow(l, karina)).join('')}`;
   }).join('');
 }
+const secEntries = (s, sec) => s.progress.filter(p => p.sec === sec).sort((a, b) => (a.ord ?? 0) - (b.ord ?? 0));
+function spark(es) {
+  if (es.length < 2) return '';
+  const W = 64, H = 22, n = es.length;
+  const pts = es.map((e, i) => `${(i * (W - 4) / (n - 1) + 2).toFixed(1)},${(H - 2 - e.score / e.max * (H - 4)).toFixed(1)}`).join(' ');
+  const last = pts.split(' ').pop().split(',');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4" fill="currentColor"/></svg>`;
+}
+function delta(es) { const d = es[es.length - 1].score - es[0].score; return es.length > 1 && d !== 0 ? `<span class="dl ${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${d}</span>` : ''; }
+function progCompact(s, karina) {
+  const have = SECTIONS.filter(([n]) => secEntries(s, n).length);
+  const none = SECTIONS.filter(([n]) => !secEntries(s, n).length).map(([n]) => n);
+  const rows = have.map(([n]) => { const es = secEntries(s, n), l = es[es.length - 1];
+    return `<button class="prow" data-act="prog" data-sec="${n}"><span class="pn"><b>${n}</b><small>${es.length} ${plural(es.length, 'замер', 'замера', 'замеров')}</small></span>${spark(es)}<span class="pv num">${l.score}<small> из ${l.max}</small>${delta(es)}</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }).join('');
+  const mk = s.mocks.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
+  const mock = mk ? `<button class="prow" data-act="mock" data-m="${mk.id}"><span class="pn"><b>Пробник</b><small>${dm(mk.date)}</small></span><span class="pv num">${mk.p}<small> перв.</small> &nbsp;${mk.s}<small> втор.</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>` : '';
+  return `<h2><span>Прогресс</span>${karina ? `<button class="lnk" data-act="addprog">+ результат</button>` : ''}</h2>${rows}${mock}${none.length ? `<div class="fine" style="margin-top:10px">${none.join(', ')}: нет результатов</div>` : ''}`;
+}
 function progressBlock(s, karina) {
   const rows = SECTIONS.map(([sec]) => {
-    const es = s.progress.filter(p => p.sec === sec).sort((a, b) => a.date.localeCompare(b.date));
+    const es = secEntries(s, sec);
     if (!es.length) return `<div class="prg"><div class="h"><b>${sec}</b><span class="v none">нет результатов</span></div></div>`;
     const last = es[es.length - 1];
-    const way = es.length > 1 ? `<div class="way num">${es.map(e => e.score).join(' → ')} ${es[es.length - 1].score > es[0].score ? `<b>+${es[es.length - 1].score - es[0].score}</b>` : ''} &nbsp;с ${dms(es[0].date)}</div>` : `<div class="way">${dm(last.date)}</div>`;
-    return `<div class="prg"><div class="h"><b>${sec}</b><span class="v num">${last.score}<small> из ${last.max}</small></span></div>${way}<div class="bar"><i style="width:${Math.round(last.score / last.max * 100)}%"></i></div></div>`;
+    return `<button class="prg" data-act="prog" data-sec="${sec}"><div class="h"><b>${sec}</b><span class="v num">${last.score}<small> из ${last.max}</small></span></div><div class="way num">${es.map(e => e.score).join(' → ')} ${delta(es)}</div><div class="bar"><i style="width:${Math.round(last.score / last.max * 100)}%"></i></div></button>`;
   }).join('');
   return `<h2><span>Прогресс по разделам</span>${karina ? `<button class="lnk" data-act="addprog">+ результат</button>` : ''}</h2>${rows}`;
 }
+function chart(es) {
+  const n = es.length, bw = 30, gap = Math.max(10, Math.min(28, (300 - n * bw) / Math.max(n - 1, 1))), H = 120;
+  const W = n * bw + (n - 1) * gap;
+  const bars = es.map((e, i) => { const h = Math.max(2, Math.round(e.score / e.max * H)); const x = i * (bw + gap);
+    return `<rect x="${x}" y="${H - h + 18}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? 'var(--ink)' : '#D9D0C6'}"/><text x="${x + bw / 2}" y="${H - h + 12}" text-anchor="middle" class="cv">${e.score}</text><text x="${x + bw / 2}" y="${H + 36}" text-anchor="middle" class="cl">${i + 1}</text>`; }).join('');
+  return `<svg class="chart" viewBox="-2 0 ${W + 4} ${H + 42}" width="${W + 4}" height="${H + 42}" role="img" aria-label="Динамика: ${es.map(e => e.score).join(', ')}"><line x1="-2" x2="${W + 2}" y1="${H + 18}" y2="${H + 18}" stroke="var(--line2)"/>${bars}</svg>`;
+}
+
 function mocksBlock(s, karina) {
-  const rows = s.mocks.slice().sort((a, b) => b.date.localeCompare(a.date)).map(m => `<div class="mock" data-row="${m.id}"><div class="n"><b>Пробник, ${dm(m.date)}</b><div>${m.link ? `<a class="lnk" style="min-height:0" href="${esc(m.link)}" target="_blank" rel="noopener">проверка работы</a>` : 'без ссылки'}</div></div>
-    <div class="sc"><b class="num">${m.p}</b><span>первичный</span></div><div class="sc"><b class="num">${m.s}</b><span>вторичный</span></div></div>`).join('');
+  const rows = s.mocks.slice().sort((a, b) => b.date.localeCompare(a.date)).map(m => `<button class="mock" data-act="mock" data-m="${m.id}" data-row="${m.id}"><div class="n"><b>Пробник, ${dm(m.date)}</b><div>${m.link ? 'проверка работы' : 'без ссылки'}</div></div>
+    <div class="sc"><b class="num">${m.p}</b><span>первичный</span></div><div class="sc"><b class="num">${m.s}</b><span>вторичный</span></div></button>`).join('');
   return `<h2><span>Пробники</span>${karina ? `<button class="lnk" data-act="addmock">+ пробник</button>` : ''}</h2>${rows || '<div class="empty">Пробников пока не было</div>'}`;
 }
 function askCard(s, l, d) {
@@ -249,7 +259,7 @@ function kWeek() {
     data.students.forEach(s => { const c = calc(s); s.lessons.filter(l => l.date === d && l.status === 'plan').forEach(l => ls.push([s, l, c])); });
     ls.sort((a, b) => a[1].time.localeCompare(b[1].time));
     html += `<h2><span>${i === 0 ? 'Сегодня, ' : i === 1 ? 'Завтра, ' : ''}${i < 2 ? dm(d) : longD(d)}</span><span>${ls.length || ''}</span></h2>`;
-    html += ls.length ? ls.map(([s, l, c]) => `<button class="les btnrow" data-act="open" data-s="${s.id}"><div class="d"><b class="num" style="font-size:16px">${l.time}</b></div><div class="t"><b>${esc(s.name)}</b><div class="tp ${l.topic ? '' : 'mute'}">${l.topic ? esc(l.topic) : 'тема по плану'}</div></div><div class="st">${isPast(l) ? '<span class="st r">отметить</span>' : payTag(c, l)}</div></button>`).join('') : '<div class="empty">Уроков нет</div>';
+    html += ls.length ? ls.map(([s, l, c]) => `<button class="les btnrow" data-act="open" data-s="${s.id}"><div class="d"><b class="num" style="font-size:16px">${l.time}</b></div><div class="t"><b>${esc(s.name)}</b>${l.topic ? `<div class="tp">${esc(l.topic)}</div>` : ''}</div><div class="st">${isPast(l) ? '<span class="st r">отметить</span>' : payTag(c, l)}</div></button>`).join('') : '<div class="empty">Уроков нет</div>';
   }
   return html;
 }
@@ -263,7 +273,7 @@ function kStudent(s, d) {
     ${c.upcoming.length > lim ? `<button class="lnk mute" data-act="more">${all ? 'свернуть' : 'ещё ' + (c.upcoming.length - lim)}</button>` : ''}`;
   const past = s.lessons.filter(l => l.status !== 'plan' || isPast(l));
   const histHtml = `${months(past, true) || '<h2>Уроки</h2><div class="empty">Уроков ещё не было</div>'}`;
-  const pays = s.payments.slice().reverse().map(p => `<div class="pr"><b class="num" style="font-weight:600">Пакет ${p.n}</b><span>${dm(p.date)}</span></div>`).join('');
+  const pays = s.payments.slice().reverse().map(p => `<div class="pr"><b class="num" style="font-weight:600">Пакет ${p.n}</b><span>${dm(p.date)}</span></div>`).join('') + (s.packNote ? `<p class="fine" style="margin-top:8px">${s.packNote}</p>` : '');
   const settings = `<h2>Ученик</h2>
     <div class="setrow"><span class="k">Расписание: <b>${schedText(s)}</b></span><button class="lnk" data-act="sched">изменить</button></div>
     <div class="setrow"><span class="k">Доступ: ${s.open ? `<b class="num">${s.phones.length ? '+7 ' + s.phones[0].replace(/\D/g, '').slice(1, 4) + ' …' : 'номер не указан'}</b>, код <b class="num">${s.code}</b>` : '<b style="color:var(--red)">закрыт</b>'}</span><button class="lnk" data-act="access">изменить</button></div>`;
@@ -275,16 +285,17 @@ function kStudent(s, d) {
         ${upHtml}${histHtml}
       </div><div>
         ${payHtml}
+        ${progCompact(s, true)}
         ${settings}
-        ${progressBlock(s, true)}${mocksBlock(s, true)}
+        ${mocksBlock(s, true)}
         <h2>Оплаты</h2><div class="pays">${pays || '<div class="empty">Оплат пока не было</div>'}</div>
       </div></div></div>`;
   }
   return `<div class="top"><button class="back" data-act="back">${I.back}Ученики</button><img class="av" src="avatar.jpg" alt=""></div>
     ${asks}<h1>${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div>
-    ${payHtml}${settings}${upHtml}${histHtml}
+    ${payHtml}${progCompact(s, true)}${settings}${upHtml}${histHtml}
     <h2>Оплаты</h2><div class="pays">${pays || '<div class="empty">Оплат пока не было</div>'}</div>
-    ${progressBlock(s, true)}${mocksBlock(s, true)}`;
+    ${mocksBlock(s, true)}`;
 }
 
 /* ---------- экраны ученика ---------- */
@@ -292,10 +303,10 @@ function sNow(s, d) {
   const c = calc(s);
   const ups = c.upcoming.slice(0, 3).map(l => upRow(s, c, l, false)).join('') || '<div class="empty">Уроков не запланировано</div>';
   const hw = lastHW(s);
-  const hwHtml = `<h2>Домашнее задание</h2>${hw ? `<div class="hw"><div class="m">${hw.due ? 'к ' + dm(hw.due) : 'с урока ' + dm(hw.from)}</div>${esc(hw.text)}</div>` : '<div class="empty">Заданий нет</div>'}`;
+  const hwHtml = `<h2>Домашнее задание</h2>${hw ? `<div class="hw"><div class="m">задано ${dm(hw.from)}</div>${esc(hw.text)}</div>` : '<div class="empty">Заданий нет</div>'}`;
   const head = `<div class="top only-m"><span>Уроки с Кариной</span><img class="av" src="avatar.jpg" alt=""></div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div>`;
-  if (d) return `<div class="wrap" style="padding-top:36px">${head}<div class="cols"><div>${remBlock(s, c, true)}${hwHtml}</div><div><h2 style="margin-top:28px"><span>Ближайшие</span><span>${schedText(s)}</span></h2>${ups}</div></div></div>`;
-  return `${head}${remBlock(s, c, true)}<h2><span>Ближайшие</span><span style="font-weight:500">${schedText(s)}</span></h2>${ups}${hwHtml}`;
+  if (d) return `<div class="wrap" style="padding-top:36px">${head}<div class="cols"><div>${remBlock(s, c, true)}${progCompact(s, false)}${hwHtml}</div><div><h2 style="margin-top:28px"><span>Ближайшие</span><span>${schedText(s)}</span></h2>${ups}</div></div></div>`;
+  return `${head}${remBlock(s, c, true)}${progCompact(s, false)}<h2><span>Ближайшие</span><span style="font-weight:500">${schedText(s)}</span></h2>${ups}${hwHtml}`;
 }
 function sHist(s, d) {
   const past = s.lessons.filter(l => l.status !== 'plan' || isPast(l));
@@ -488,6 +499,24 @@ function drawSheet(first) {
       <label class="fld"><span>Дата</span><input class="in num" type="date" data-f="date" value="${st.date}"></label></div>
       <div class="info" id="err" hidden style="color:var(--red);font-weight:600"></div>
       <button class="btn main wide" data-act="saveprog">Добавить результат</button>`;
+  } else if (st.type === 'prog') {
+    const es = secEntries(s, st.sec);
+    const karina = ui.role === 'k';
+    const f = es[0], l = es[es.length - 1];
+    h = `<h3>${st.sec}</h3><div class="shd">${esc(s.name)} · ${es.length} ${plural(es.length, 'замер', 'замера', 'замеров')}</div>`;
+    if (es.length) h += `<div class="pbig num">${l.score}<small> из ${l.max}</small>${delta(es)}</div>
+      ${es.length > 1 ? `<div class="info" style="margin-top:4px">Первый замер ${f.score} из ${f.max}, последний ${l.score} из ${l.max}</div>` : ''}
+      <div class="chartbox">${chart(es)}</div>
+      <div class="opts" style="margin-top:6px">${es.map((e, i) => `<div class="setrow"><span class="k">Замер ${i + 1}${e.date ? ' · ' + dm(e.date) : ''}</span><b class="num">${e.score} <span style="color:var(--mute);font-weight:500">из ${e.max}</span></b></div>`).join('')}</div>`;
+    else h += `<div class="empty">Результатов пока нет</div>`;
+    if (karina) h += `<div class="fld"><span>Новый замер</span><div class="two" style="align-items:center"><input class="in num" inputmode="numeric" data-f="score" value="${esc(st.score)}" placeholder="балл"><input class="in num" inputmode="numeric" data-f="max" value="${esc(st.max)}" placeholder="из"><button class="btn main" data-act="addpoint" style="flex:none">+ результат</button></div></div>
+      <div class="info" id="err" hidden style="color:var(--red);font-weight:600"></div>`;
+  } else if (st.type === 'mock') {
+    const m = s.mocks.find(x => x.id === st.mid);
+    h = `<h3>Пробник</h3><div class="shd">${esc(s.name)} · ${dm(m.date)}</div>
+      <div class="two" style="margin-top:18px"><div><div class="pbig num">${m.p}</div><div class="info" style="margin-top:2px">первичный балл</div></div><div><div class="pbig num">${m.s}<small> из 100</small></div><div class="info" style="margin-top:2px">вторичный балл</div></div></div>
+      <div class="bar" style="height:6px;margin-top:16px"><i style="width:${Math.min(m.s, 100)}%"></i></div>
+      <div class="setrow" style="margin-top:14px;border-top:1px solid var(--line)"><span class="k">Проверка работы</span><span class="tag">${m.link ? 'есть' : 'нет'}</span></div>`;
   } else if (st.type === 'addmock') {
     h = `<h3>Пробник</h3><div class="shd">${esc(s.name)}</div>
       <div class="two"><label class="fld"><span>Первичный</span><input class="in num" inputmode="numeric" data-f="p" value="${esc(st.p)}" placeholder="0"></label>
@@ -535,7 +564,7 @@ function bindCode() {
     if (inp.value.length === 4) {
       /* макет: пускает с любым кодом; проверку номера и кода делает рабочая версия */
       if (ph.value.replace(/\D/g, '').length < 11) { document.getElementById('codeerr').hidden = false; inp.value = ''; paint(); ph.focus(); return; }
-      const s = data.students.find(x => x.token === ui.stoken && x.open) || S('masha');
+      const s = data.students.find(x => x.token === ui.stoken && x.open) || S('alina');
       ui.stoken = s.token; auth.s[s.token] = true; save(); ui.stab = 'now'; lastScreenKey = 'x'; render();
     }
   });
@@ -554,11 +583,11 @@ function onClick(e) {
   switch (a) {
     case 'role': {
       ui.role = b.dataset.role; ui.sid = null; lastScreenKey = ''; closeSheet();
-      if (ui.role === 's') { const m = S('masha'); ui.stoken = m ? m.token : ui.stoken; history.replaceState(null, '', '#s=' + ui.stoken); }
+      if (ui.role === 's') { const m = S('alina'); ui.stoken = m ? m.token : ui.stoken; history.replaceState(null, '', '#s=' + ui.stoken); }
       else history.replaceState(null, '', location.pathname + location.search);
       render(); break;
     }
-    case 'reset': { try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + ':auth'); } catch (er) { } data = seed(); auth = { k: false, s: {} }; ui.sid = null; ui.dsid = 'masha'; ui.stoken = 'k7Qx9mP2vR4t'; closeSheet(); lastScreenKey = ''; render(); toast('Пример вернули к началу'); break; }
+    case 'reset': { try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + ':auth'); } catch (er) { } data = seed(); auth = { k: false, s: {} }; ui.sid = null; ui.dsid = 'alina'; ui.stoken = 'k7Qx9mP2vR4t'; closeSheet(); lastScreenKey = ''; render(); toast('Пример вернули к началу'); break; }
     case 'remember': ui.remember = !(ui.remember !== false); b.setAttribute('aria-pressed', String(ui.remember)); break;
     case 'login': {
       const pw = document.getElementById('pw').value;
@@ -595,6 +624,15 @@ function onClick(e) {
     case 'addprog': openSheet({ type: 'addprog', sid: curSid(), sec: 'Reading', score: '', max: '20', date: TODAY }); break;
     case 'addmock': openSheet({ type: 'addmock', sid: curSid(), p: '', s: '', date: TODAY, link: '' }); break;
     case 'close': closeSheet(); break;
+    case 'prog': { const s = data.students.find(x => x.token === ui.stoken && ui.role === 's') || S(curSid()); const es = secEntries(s, b.dataset.sec); openSheet({ type: 'prog', sid: s.id, sec: b.dataset.sec, score: '', max: String(es.length ? es[es.length - 1].max : SECTIONS.find(x => x[0] === b.dataset.sec)[1]) }); break; }
+    case 'mock': { const s = data.students.find(x => x.token === ui.stoken && ui.role === 's') || S(curSid()); openSheet({ type: 'mock', sid: s.id, mid: b.dataset.m }); break; }
+    case 'addpoint': {
+      const sc = parseInt(st.score, 10), mx = parseInt(st.max, 10); const err = document.getElementById('err');
+      if (!(mx > 0) || isNaN(sc) || sc < 0 || sc > mx) { err.textContent = 'Балл от 0 до ' + (mx > 0 ? mx : 'максимума'); err.hidden = false; return; }
+      const s = S(st.sid); const es = secEntries(s, st.sec);
+      commit(() => s.progress.push({ id: uid(), date: TODAY, ord: es.length ? es[es.length - 1].ord + 1 : 0, sec: st.sec, score: sc, max: mx }), `${st.sec}: ${sc} из ${mx}`);
+      st.score = ''; drawSheet(); break;
+    }
     case 'mode': st.mode = b.dataset.mode; drawSheet(); break;
     case 'pickday': st.date = b.dataset.d; drawSheet(); break;
     case 'calnav': st.cal = add(st.cal, +b.dataset.n); drawSheet(); break;
@@ -664,7 +702,7 @@ function onClick(e) {
       const err = document.getElementById('err');
       if (!(mx > 0) || isNaN(sc) || sc < 0 || sc > mx) { err.textContent = 'Балл должен быть от 0 до ' + (mx > 0 ? mx : 'максимума'); err.hidden = false; return; }
       const s = S(st.sid);
-      commit(() => s.progress.push({ id: uid(), date: st.date || TODAY, sec: st.sec, score: sc, max: mx }), `${st.sec}: ${sc} из ${mx}`);
+      commit(() => { const es = secEntries(s, st.sec); s.progress.push({ id: uid(), date: st.date || TODAY, ord: es.length ? es[es.length - 1].ord + 1 : 0, sec: st.sec, score: sc, max: mx }); }, `${st.sec}: ${sc} из ${mx}`);
       closeSheet(); break;
     }
     case 'savemock': {
@@ -697,20 +735,21 @@ function applyShot(k) {
   data = seed(); auth = { k: true, s: { 'k7Qx9mP2vR4t': true } };
   document.documentElement.classList.add('shot');
   if (!'CIJK'.includes(k)) document.documentElement.classList.add('phone');
-  const m = S('masha');
+  const m = S('alina');
   const l16 = m.lessons.find(l => l.date === '2026-10-16');
-  const done16 = () => { l16.status = 'done'; l16.topic = 'Hobbies. Задание 4 устной части: фото про хобби'; l16.hw = 'Progress me, Hobbies, sections 1, 2, 5, 6. Выучить лексику про преимущества хобби'; l16.note = 'Путает since / for'; };
-  if (k === 'A') { done16(); ui.role = 's'; ui.stab = 'now'; }
-  if (k === 'B') { done16(); ui.role = 's'; ui.stab = 'hist'; document.documentElement.classList.add('long'); }
-  if (k === 'C') { ui.role = 'k'; ui.dsid = 'masha'; }
-  if (k === 'D') { ui.role = 'k'; ui.sid = 'masha'; render(); openSheet({ type: 'mark', sid: 'masha', lid: l16.id, mode: 'done', topic: l16.topic || 'Hobbies. Задание 4 устной части: фото про хобби', hw: 'Progress me, Hobbies, sections 1, 2, 5, 6. Выучить лексику про преимущества хобби', note: 'Путает since / for', date: '2026-10-20', cal: '2026-10-20', time: '17:00' }); return; }
-  if (k === 'E') { const l2 = m.lessons.find(l => l.date === '2026-10-02'); l2.status = 'plan'; ui.role = 'k'; ui.sid = 'masha'; render(); openSheet({ type: 'mark', sid: 'masha', lid: l2.id, mode: 'move', topic: '', hw: '', note: '', date: '2026-10-13', cal: '2026-10-13', time: '17:00', nocharge: true, burn: false }); return; }
+  if (k === 'A') { ui.role = 's'; ui.stab = 'now'; document.documentElement.classList.add('long'); }
+  if (k === 'B') { ui.role = 's'; ui.stab = 'hist'; document.documentElement.classList.add('long'); }
+  if (k === 'C') { ui.role = 'k'; ui.dsid = 'alina'; }
+  if (k === 'D') { ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'mark', sid: 'alina', lid: l16.id, mode: 'done', topic: '', hw: '', note: '', date: '2026-10-20', cal: '2026-10-20', time: '17:00' }); return; }
+  if (k === 'E') { const l2 = m.lessons.find(l => l.date === '2026-10-02'); l2.status = 'plan'; ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'mark', sid: 'alina', lid: l2.id, mode: 'move', topic: '', hw: '', note: '', date: '2026-10-13', cal: '2026-10-13', time: '17:00', nocharge: true, burn: false }); return; }
   if (k === 'F') { auth.s = {}; ui.role = 's'; }
   if (k === 'G') { auth.k = false; ui.role = 'k'; }
   if (k === 'H') { ui.role = 'k'; }
-  if (k === 'I') { done16(); ui.role = 's'; ui.stab = 'now'; }
-  if (k === 'J') { ui.role = 'k'; ui.dsid = 'masha'; render(); openSheet({ type: 'access', sid: 'masha', ph0: m.phones[0], ph1: m.phones[1], code: m.code, confirm: false }); return; }
-  if (k === 'K') { ui.role = 'k'; ui.dsid = 'masha'; render(); openSheet({ type: 'sched', sid: 'masha', days: [2, 5], time: '17:00' }); return; }
+  if (k === 'I') { ui.role = 's'; ui.stab = 'now'; }
+  if (k === 'P') { ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', score: '', max: '14' }); return; }
+  if (k === 'Q') { ui.role = 's'; render(); openSheet({ type: 'mock', sid: 'alina', mid: m.mocks[0].id }); return; }
+  if (k === 'J') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'access', sid: 'alina', ph0: m.phones[0], ph1: m.phones[1], code: m.code, confirm: false }); return; }
+  if (k === 'K') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'sched', sid: 'alina', days: [2, 5], time: '17:00' }); return; }
   render();
   if (k === 'F') { const i = document.getElementById('code'); i.value = '12'; i.dispatchEvent(new Event('input')); document.querySelectorAll('.cell')[2].classList.add('cur'); }
 }
