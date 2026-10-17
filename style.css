@@ -356,3 +356,11 @@ textarea.in { min-height: 76px; }
   .grid td { min-width: 44px; }
   .grid td small { font-size: 10px; }
 }
+.grid thead th small { display: block; font-size: 10px; color: #BDB5AC; font-weight: 500; margin-top: 1px; }
+.grid thead th { font-size: 11.5px; color: var(--ink2); }
+.chart .cl { font-size: 10px; }
+.prow .pn small { white-space: nowrap; }
+.grid tbody th button { font: inherit; color: inherit; text-align: left; text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px; min-height: 24px; }
+.grid tbody th button:hover { text-decoration-color: var(--ink); }
+.grid .nd { color: #BDB5AC; font-weight: 700; }
+.grid .part { font-size: 10.5px; color: var(--mute); font-weight: 500; }

@@ -1,7 +1,8 @@
 /* Уроки Карины. Прототип: данные в памяти + localStorage. Сегодня зафиксировано: сб, 17 октября 2026, 14:00. */
 'use strict';
 const TODAY = '2026-10-17', NOWT = '14:00';
-const KEY = 'karina-lessons-proto-v1';
+/* ключ хранилища менять при каждом изменении формы данных, иначе у открывавших раньше грузится старое состояние */
+const KEY = 'karina-proto-v4';
 const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 const WDN = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
 const MG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -66,14 +67,15 @@ function seed() {
       L('2026-10-23', '17:00', 'plan', '', '', '', { auto: true }),
       L('2026-10-27', '17:00', 'plan', '', '', '', { auto: true }),
     ],
-    /* попытки слева направо, как в таблице; tot = её «Итого» дословно */
+    /* попытки слева направо, как в таблице; tot = её «Итого» дословно; даты попыток условные (в шаблоне их нет), по просьбе владельца;
+       null = задание в этой попытке не делали; такая попытка частичная, в итоги раздела не идёт */
     prog: {
-      'Listening': { att: [[1, 0, 4], [2, 3, 5]], tot: [5, 10] },
-      'Reading': { att: [[2, 0, 5]], tot: [7] },
-      'Grammar & Vocabulary': { att: [[4, 3, 3], [6, 4, 2], [6, 5, 4]], tot: [10, 12, 16] },
-      'Letter': { att: [[1, 2, 1], [1, 1, 0], [0, 2, 0], [2, 0, 0], [1, 2, 1]], tot: [4, 2, 0, 2, 4] },
-      'Essay': { att: [[1, 2, 1, 1, 0], [2, 1, 0, 0, 2], [0, 2, 2, 1, 2], [2, 3, 2, 0, 1], [2, 2, 1, 1, 2]], tot: [5, 5, 0, 8, 8] },
-      'Speaking': { att: [[1, 3, 5, 3, 1, 1, 1], [1, 3, 5, 5, 2, 2, 1], [1, 4, 4, 4, 1, 2, 1]], tot: [12, 14, 13] },
+      'Listening': { att: [[1, 0, 4], [2, 3, 5], [2, null, null]], tot: [5, 10, null], dates: ['2026-09-15', '2026-09-29', '2026-10-13'] },
+      'Reading': { att: [[2, 0, 5], [null, null, 6]], tot: [7, null], dates: ['2026-09-25', '2026-10-06'] },
+      'Grammar & Vocabulary': { att: [[4, 3, 3], [6, 4, 2], [6, 5, 4]], tot: [10, 12, 16], dates: ['2026-09-15', '2026-09-29', '2026-10-13'] },
+      'Letter': { att: [[1, 2, 1], [1, 1, 0], [0, 2, 0], [2, 0, 0], [1, 2, 1]], tot: [4, 2, 0, 2, 4], dates: ['2026-09-15', '2026-09-18', '2026-09-25', '2026-10-06', '2026-10-13'] },
+      'Essay': { att: [[1, 2, 1, 1, 0], [2, 1, 0, 0, 2], [0, 2, 2, 1, 2], [2, 3, 2, 0, 1], [2, 2, 1, 1, 2]], tot: [5, 5, 0, 8, 8], dates: ['2026-09-15', '2026-09-18', '2026-09-25', '2026-10-06', '2026-10-13'] },
+      'Speaking': { att: [[1, 3, 5, 3, 1, 1, 1], [1, 3, 5, 5, 2, 2, 1], [1, 4, 4, 4, 1, 2, 1]], tot: [12, 14, 13], dates: ['2026-09-18', '2026-09-29', '2026-10-13'] },
     },
     mocks: [{ id: uid(), date: '', p: 75, s: 94, link: 'есть' }],
   };
@@ -201,8 +203,12 @@ function months(list, karina) {
 }
 const pg = (s, n) => (s.prog && s.prog[n]) || { att: [], tot: [] };
 const secMax = n => SECD(n).rows.filter(r => !r[2]).reduce((a, r) => a + r[1], 0);
+function formSum(n, vals) { const a = vals.map(v => String(v ?? '').trim() === '' ? null : (parseInt(v, 10) || 0)); if (a.every(x => x == null)) return '·'; return isPartial(n, a) ? 'частично' : calcTot(n, a); }
 function calcTot(n, a) { const d = SECD(n); if (d.k1zero && a[0] === 0) return 0; return d.rows.reduce((t, r, i) => t + (r[2] ? 0 : (a[i] || 0)), 0); }
-function totals(s, n) { const p = pg(s, n), mx = secMax(n); return p.att.map((a, i) => ({ score: p.tot[i] != null ? p.tot[i] : calcTot(n, a), max: mx })); }
+const isPartial = (n, a) => SECD(n).rows.some((r, i) => !r[2] && a[i] == null);
+function allAtt(s, n) { const p = pg(s, n), mx = secMax(n); return p.att.map((a, i) => ({ a, partial: isPartial(n, a), score: isPartial(n, a) ? null : (p.tot[i] != null ? p.tot[i] : calcTot(n, a)), max: mx, date: (p.dates || [])[i] || '', i })); }
+function totals(s, n) { return allAtt(s, n).filter(e => !e.partial); }
+function taskHist(s, n, ri) { const r = SECD(n).rows[ri]; return allAtt(s, n).filter(e => e.a[ri] != null).map(e => ({ score: e.a[ri], max: r[1], date: e.date, i: e.i })); }
 function spark(es) {
   if (es.length < 2) return '<span class="spark"></span>';
   const W = 64, H = 22, n = es.length;
@@ -213,31 +219,33 @@ function spark(es) {
 function delta(es) { if (es.length < 2) return ''; const d = es[es.length - 1].score - es[0].score; return d !== 0 ? `<span class="dl ${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${d}</span>` : ''; }
 function progCompact(s, karina) {
   const rows = SEC.map(d => { const es = totals(s, d.n); const l = es[es.length - 1];
-    return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>${es.length ? es.length + ' ' + plural(es.length, 'попытка', 'попытки', 'попыток') : 'попыток нет'}</small></span>${spark(es)}<span class="pv num">${l ? `${l.score}<small> из ${l.max}</small>${delta(es)}` : '<small>нет</small>'}</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }).join('');
+    const all = allAtt(s, d.n), lp = all[all.length - 1];
+    if (!l && lp) { const ri = d.rows.findIndex((r, i) => lp.a[i] != null);
+      return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>последнее: ${esc(d.rows[ri][0])}, ${lp.a[ri]} из ${d.rows[ri][1]}${lp.date ? ', ' + dms(lp.date) : ''}</small></span><span class="spark"></span><span class="pv num"><small>частично</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }
+    return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>${es.length ? (l.date ? 'последняя ' + dms(l.date) : es.length + ' ' + plural(es.length, 'попытка', 'попытки', 'попыток')) : 'попыток нет'}</small></span>${spark(es)}<span class="pv num">${l ? `${l.score}<small> из ${l.max}</small>${delta(es)}` : '<small>нет</small>'}</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }).join('');
   const mk = s.mocks[s.mocks.length - 1];
   const mock = mk ? `<button class="prow" data-act="mock" data-m="${mk.id}"><span class="pn"><b>Пробник</b><small>${mk.date ? dm(mk.date) : 'проверка работы'}</small></span><span class="pv num">${mk.p}<small> перв.</small> &nbsp;${mk.s}<small> втор.</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>` : '';
   return `<h2><span>Прогресс по разделам ЕГЭ</span></h2>${rows}${karina ? '' : mock}`;
 }
 function progressBlock(s) { return progCompact(s, false); }
 function grid(s, n) {
-  const d = SECD(n), p = pg(s, n), es = totals(s, n);
+  const d = SECD(n), p = pg(s, n), es = allAtt(s, n);
   const tint = (v, m) => v == null ? '' : v >= m ? 'g' : v === 0 ? 'r' : '';
-  const head = `<tr><th></th>${p.att.map((_, i) => `<th>${i + 1}</th>`).join('')}</tr>`;
-  const body = d.rows.map((r, ri) => `<tr class="${r[2] ? 'sub' : ''}"><th>${esc(r[0])}</th>${p.att.map(a => `<td class="${tint(a[ri], r[1])}">${a[ri] == null ? '' : a[ri] + '<small>/' + r[1] + '</small>'}</td>`).join('')}</tr>`).join('');
-  const tot = `<tr class="tot"><th>Итого</th>${es.map(e => `<td>${e.score}<small>/${e.max}</small></td>`).join('')}</tr>`;
+  const head = `<tr><th></th>${es.map((e, i) => `<th>${e.date ? dms(e.date) : '&nbsp;'}<small>${i + 1}</small></th>`).join('')}</tr>`;
+  const body = d.rows.map((r, ri) => `<tr class="${r[2] ? 'sub' : ''}"><th><button data-act="task" data-row="${ri}">${esc(r[0])}</button></th>${p.att.map(a => `<td class="${tint(a[ri], r[1])}">${a[ri] == null ? '<span class="nd" title="не делали">·</span>' : a[ri] + '<small>/' + r[1] + '</small>'}</td>`).join('')}</tr>`).join('');
+  const tot = `<tr class="tot"><th>Итого</th>${es.map(e => e.partial ? '<td><span class="part">частично</span></td>' : `<td>${e.score}<small>/${e.max}</small></td>`).join('')}</tr>`;
   return `<div class="gridwrap"><table class="grid num"><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`;
 }
 function weakest(s, n) {
-  const d = SECD(n), p = pg(s, n); if (!p.att.length) return '';
-  const a = p.att[p.att.length - 1]; let w = -1, wr = 2;
-  d.rows.forEach((r, i) => { if (a[i] == null) return; const q = a[i] / r[1]; if (q < wr) { wr = q; w = i; } });
-  return w < 0 || wr >= 1 ? '' : `Слабее всего в последней попытке: <b>${esc(d.rows[w][0])} ${a[w]} из ${d.rows[w][1]}</b>`;
+  const d = SECD(n); let w = -1, wr = 2, wv = null;
+  d.rows.forEach((r, i) => { const h = taskHist(s, n, i); if (!h.length) return; const v = h[h.length - 1].score, q = v / r[1]; if (q < wr) { wr = q; w = i; wv = v; } });
+  return w < 0 || wr >= 1 ? '' : `Слабее всего по последним результатам: <b>${esc(d.rows[w][0])}, ${wv} из ${d.rows[w][1]}</b>`;
 }
 function chart(es) {
-  const n = es.length, bw = 30, gap = Math.max(10, Math.min(28, (300 - n * bw) / Math.max(n - 1, 1))), H = 90;
+  const n = es.length, bw = 30, gap = Math.max(14, Math.min(28, (300 - n * bw) / Math.max(n - 1, 1))), H = 90;
   const W = n * bw + (n - 1) * gap;
   const bars = es.map((e, i) => { const h = Math.max(2, Math.round(e.score / e.max * H)); const x = i * (bw + gap);
-    return `<rect x="${x}" y="${H - h + 18}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? 'var(--ink)' : '#D9D0C6'}"/><text x="${x + bw / 2}" y="${H - h + 12}" text-anchor="middle" class="cv">${e.score}</text><text x="${x + bw / 2}" y="${H + 36}" text-anchor="middle" class="cl">${i + 1}</text>`; }).join('');
+    return `<rect x="${x}" y="${H - h + 18}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? 'var(--ink)' : '#D9D0C6'}"/><text x="${x + bw / 2}" y="${H - h + 12}" text-anchor="middle" class="cv">${e.score}</text><text x="${x + bw / 2}" y="${H + 36}" text-anchor="middle" class="cl">${e.date ? dms(e.date) : i + 1}</text>`; }).join('');
   return `<svg class="chart" viewBox="-2 0 ${W + 4} ${H + 42}" width="${W + 4}" height="${H + 42}" role="img" aria-label="Динамика: ${es.map(e => e.score).join(', ')}"><line x1="-2" x2="${W + 2}" y1="${H + 18}" y2="${H + 18}" stroke="var(--line2)"/>${bars}</svg>`;
 }
 
@@ -520,16 +528,27 @@ function drawSheet(first) {
     const d = SECD(st.sec), es = totals(s, st.sec);
     const karina = ui.role === 'k';
     const f = es[0], l = es[es.length - 1];
-    h = `<h3 class="sech" style="--sc:${d.c}">${st.sec}</h3><div class="shd">${esc(s.name)} · ${es.length} ${plural(es.length, 'попытка', 'попытки', 'попыток')}</div>`;
+    const nAll = allAtt(s, st.sec).length, nPart = nAll - es.length;
+    h = `<h3 class="sech" style="--sc:${d.c}">${st.sec}</h3><div class="shd">${esc(s.name)} · ${nAll} ${plural(nAll, 'попытка', 'попытки', 'попыток')}${nPart ? `, из них ${nPart} ${plural(nPart, 'частичная', 'частичные', 'частичных')}` : ''}</div>`;
+    if (st.task != null) {
+      const r = d.rows[st.task], th = taskHist(s, st.sec, st.task), f0 = th[0], l0 = th[th.length - 1];
+      h = `<button class="back" data-act="untask" style="min-height:36px;margin:-6px 0 4px">${I.back}${st.sec}</button><h3 class="sech" style="--sc:${d.c}">${esc(r[0])}</h3><div class="shd">${esc(s.name)} · ${th.length ? 'делали ' + th.length + ' ' + plural(th.length, 'раз', 'раза', 'раз') : 'ещё не делали'}</div>`;
+      if (th.length) h += `<div class="pbig num">${l0.score}<small> из ${r[1]}</small>${delta(th)}</div>
+        ${th.length > 1 ? `<div class="info" style="margin-top:4px">Первый раз${f0.date ? ' ' + dm(f0.date) : ''}: ${f0.score} из ${r[1]}, последний${l0.date ? ' ' + dm(l0.date) : ''}: ${l0.score} из ${r[1]}</div>` : ''}
+        <div class="chartbox">${chart(th)}</div>
+        <div class="opts" style="margin-top:6px">${th.map(e => `<div class="setrow"><span class="k">${e.date ? dm(e.date) + ' · ' : ''}попытка ${e.i + 1}</span><b class="num">${e.score} <span style="color:var(--mute);font-weight:500">из ${r[1]}</span></b></div>`).join('')}</div>`;
+    } else
     if (st.adding) {
-      const sum = calcTot(st.sec, st.vals.map(v => parseInt(v, 10) || 0));
-      h += `<div class="fld"><span>Попытка ${es.length + 1}</span></div><div class="attf">${d.rows.map((r, i) => `<label class="ar ${r[2] ? 'sub' : ''}"><span>${esc(r[0])}${r[2] ? ' <em>в задании 4</em>' : ''}</span><input class="in num" inputmode="numeric" data-av="${i}" value="${esc(st.vals[i])}" placeholder="0"><em>из ${r[1]}</em></label>`).join('')}
+      const sum = formSum(st.sec, st.vals);
+      h += `<label class="fld"><span>Попытка ${es.length + 1} · дата</span><input class="in num" type="date" data-f="adate" value="${st.adate}" style="max-width:200px"></label><div class="attf" style="margin-top:12px">${d.rows.map((r, i) => `<label class="ar ${r[2] ? 'sub' : ''}"><span>${esc(r[0])}${r[2] ? ' <em>в задании 4</em>' : ''}</span><input class="in num" inputmode="numeric" data-av="${i}" value="${esc(st.vals[i])}" placeholder="0"><em>из ${r[1]}</em></label>`).join('')}
         <div class="ar tot"><span>Итого</span><b class="num" id="attsum">${sum}</b><em>из ${secMax(st.sec)}</em></div></div>
-        ${d.k1zero ? '<div class="info">Если РКЗ 0, итог 0, как в ЕГЭ.</div>' : ''}
+        <div class="info">Пустое поле = задание не делали. Итого считается, только когда заполнены все задания.${d.k1zero ? ' Если РКЗ 0, итог 0, как в ЕГЭ.' : ''}</div>
         <button class="btn main wide" data-act="saveatt">Сохранить попытку</button><button class="cancel" data-act="noatt">Не добавлять</button>`;
     } else {
-      if (es.length) h += `<div class="pbig num">${l.score}<small> из ${l.max}</small>${delta(es)}</div>
-        ${es.length > 1 ? `<div class="info" style="margin-top:4px">Первая попытка ${f.score} из ${f.max}, последняя ${l.score} из ${l.max}</div>` : ''}
+      const allA = allAtt(s, st.sec);
+      if (!es.length && allA.length) h += `<div class="info" style="margin-top:14px">Полных попыток раздела пока нет, только отдельные задания. Нажмите на задание, чтобы увидеть его динамику.</div>${weakest(s, st.sec) ? `<div class="weak">${weakest(s, st.sec)}</div>` : ''}${grid(s, st.sec)}`;
+      else if (es.length) h += `<div class="pbig num">${l.score}<small> из ${l.max}</small>${delta(es)}</div>
+        ${es.length > 1 ? `<div class="info" style="margin-top:4px">Первая попытка${f.date ? ' ' + dm(f.date) : ''}: ${f.score} из ${f.max}, последняя${l.date ? ' ' + dm(l.date) : ''}: ${l.score} из ${l.max}</div>` : ''}
         ${weakest(s, st.sec) ? `<div class="weak">${weakest(s, st.sec)}</div>` : ''}
         <div class="chartbox">${chart(es)}</div>${grid(s, st.sec)}`;
       else h += `<div class="emptybox"><b>Пока нет попыток</b><span>${karina ? 'Задания раздела: ' + d.rows.filter(r => !r[2]).map(r => r[0]).join(', ') + '. Итого из ' + secMax(st.sec) + '.' : 'Результаты появятся после первой попытки.'}</span></div>`;
@@ -649,12 +668,15 @@ function onClick(e) {
     case 'close': closeSheet(); break;
     case 'prog': { const s = (ui.role === 's' && data.students.find(x => x.token === ui.stoken)) || S(curSid()); openSheet({ type: 'prog', sid: s.id, sec: b.dataset.sec, adding: false, vals: [] }); break; }
     case 'mock': { const s = (ui.role === 's' && data.students.find(x => x.token === ui.stoken)) || S(curSid()); openSheet({ type: 'mock', sid: s.id, mid: b.dataset.m }); break; }
-    case 'addatt': st.adding = true; st.vals = SECD(st.sec).rows.map(() => ''); drawSheet(); break;
+    case 'addatt': st.adding = true; st.adate = TODAY; st.vals = SECD(st.sec).rows.map(() => ''); drawSheet(); break;
+    case 'task': st.task = +b.dataset.row; drawSheet(); break;
+    case 'untask': st.task = null; drawSheet(); break;
     case 'noatt': st.adding = false; drawSheet(); break;
     case 'saveatt': {
       const s = S(st.sid), d = SECD(st.sec);
-      const a = d.rows.map((r, i) => Math.max(0, Math.min(r[1], parseInt(st.vals[i], 10) || 0)));
-      commit(() => { s.prog = s.prog || {}; const p = s.prog[st.sec] = s.prog[st.sec] || { att: [], tot: [] }; p.att.push(a); p.tot.push(null); }, `${st.sec}: попытка ${pg(s, st.sec).att.length + 1}, итого ${calcTot(st.sec, a)} из ${secMax(st.sec)}`);
+      const a = d.rows.map((r, i) => String(st.vals[i] ?? '').trim() === '' ? null : Math.max(0, Math.min(r[1], parseInt(st.vals[i], 10) || 0)));
+      if (a.every(x => x == null)) { toast('Заполните хотя бы одно задание'); return; }
+      commit(() => { s.prog = s.prog || {}; const p = s.prog[st.sec] = s.prog[st.sec] || { att: [], tot: [] }; p.att.push(a); p.tot.push(null); p.dates = p.dates || []; while (p.dates.length < p.att.length - 1) p.dates.push(''); p.dates.push(st.adate || TODAY); }, `${st.sec}: попытка ${pg(s, st.sec).att.length + 1}${isPartial(st.sec, a) ? ', частичная' : ', итого ' + calcTot(st.sec, a) + ' из ' + secMax(st.sec)}`);
       st.adding = false; drawSheet(); break;
     }
     case 'mode': st.mode = b.dataset.mode; drawSheet(); break;
@@ -733,7 +755,7 @@ function onClick(e) {
 }
 function flash(id) { requestAnimationFrame(() => { const el = document.querySelector(`[data-row="${id}"]`); if (el) { el.classList.add('fresh'); if (!isShot) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }); }
 function onInput(e) {
-  if (e.target.dataset && e.target.dataset.av != null && sheet) { sheet.vals[+e.target.dataset.av] = e.target.value; const el = document.getElementById('attsum'); if (el) el.textContent = calcTot(sheet.sec, sheet.vals.map(v => parseInt(v, 10) || 0)); return; }
+  if (e.target.dataset && e.target.dataset.av != null && sheet) { sheet.vals[+e.target.dataset.av] = e.target.value; const el = document.getElementById('attsum'); if (el) el.textContent = formSum(sheet.sec, sheet.vals); return; }
   const f = e.target.dataset && e.target.dataset.f;
   if (!f || !sheet) return;
   if (f === 'ph0' || f === 'ph1' || f === 'phone') e.target.value = fmtPhone(e.target.value);
@@ -750,7 +772,7 @@ function applyShot(k) {
   isShot = true;
   data = seed(); auth = { k: true, s: { 'k7Qx9mP2vR4t': true } };
   document.documentElement.classList.add('shot');
-  if (!['C', 'I', 'J', 'K'].includes(k)) document.documentElement.classList.add('phone');
+  if (!['C', 'I', 'J', 'K', 'L'].includes(k)) document.documentElement.classList.add('phone');
   const m = S('alina');
   const l16 = m.lessons.find(l => l.date === '2026-10-16');
   if (k === 'A') { ui.role = 's'; ui.stab = 'now'; document.documentElement.classList.add('long'); }
@@ -763,6 +785,8 @@ function applyShot(k) {
   if (k === 'H') { ui.role = 'k'; }
   if (k === 'I') { ui.role = 's'; ui.stab = 'now'; }
   if (k === 'G2') { ui.role = 's'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', adding: false, vals: [] }); return; }
+  if (k === 'L') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Listening', adding: false, vals: [] }); return; }
+  if (k === 'T') { ui.role = 's'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Listening', adding: false, vals: [], task: 0 }); return; }
   if (k === 'P') { ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', adding: true, vals: ['2', '2', '2', '1', '2'] }); return; }
   if (k === 'Q') { ui.role = 's'; render(); openSheet({ type: 'mock', sid: 'alina', mid: m.mocks[0].id }); return; }
   if (k === 'J') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'access', sid: 'alina', ph0: m.phones[0], ph1: m.phones[1], code: m.code, confirm: false }); return; }
