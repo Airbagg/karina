@@ -314,3 +314,45 @@ textarea.in { min-height: 76px; }
 .chart .cl { font: 500 11px var(--ui); fill: var(--mute); }
 .chart rect { transition: height .4s var(--ease), y .4s var(--ease); }
 .les .t > b { font-size: 13px; font-weight: 500; color: var(--mute); }
+
+/* ---------- раздел ЕГЭ: акцент, сетка задание × попытка ---------- */
+.prow { position: relative; padding-left: 12px; }
+.prow::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 2px; background: var(--sc, transparent); }
+.prow .spark { width: 64px; height: 22px; }
+.sech { padding-left: 12px; position: relative; }
+.sech::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 2px; background: var(--sc); }
+.weak { margin-top: 12px; font-size: 13.5px; color: var(--ink2); background: var(--fill); border-radius: 10px; padding: 10px 12px; line-height: 1.4; }
+.weak b { color: var(--ink); font-weight: 700; }
+.gridwrap { margin-top: 14px; overflow-x: auto; scrollbar-width: thin; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.grid { border-collapse: separate; border-spacing: 0; font-size: 14px; min-width: 100%; }
+.grid th, .grid td { padding: 9px 10px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.grid thead th { font-size: 12px; color: var(--mute); font-weight: 600; background: #fff; }
+.grid tbody th { text-align: left; font-weight: 600; color: var(--ink); position: sticky; left: 0; background: #fff; z-index: 1; box-shadow: 1px 0 0 var(--line); }
+.grid thead th:first-child { position: sticky; left: 0; z-index: 2; box-shadow: 1px 0 0 var(--line); }
+.grid td { font-weight: 600; min-width: 52px; }
+.grid td small { color: var(--mute); font-weight: 500; font-size: 11px; }
+.grid td.g { background: #E6F2EA; }
+.grid td.r { background: #FBE6E3; }
+.grid tr.sub th { font-weight: 500; color: var(--ink2); padding-left: 22px; }
+.grid tr.sub td { color: var(--ink2); font-weight: 500; }
+.grid tr.tot th, .grid tr.tot td { font-weight: 800; border-bottom: 0; background: var(--side); }
+.grid tr.tot td small { font-weight: 600; }
+.emptybox { margin-top: 18px; padding: 18px 16px; border: 1px dashed var(--line2); border-radius: 12px; }
+.emptybox b { display: block; font-size: 15px; font-weight: 700; }
+.emptybox span { display: block; font-size: 13px; color: var(--mute); margin-top: 4px; line-height: 1.45; }
+.attf { border-top: 1px solid var(--line); }
+.ar { display: grid; grid-template-columns: 1fr 72px 44px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ar > span { font-size: 15px; font-weight: 600; }
+.ar > span em, .ar > em { font-style: normal; color: var(--mute); font-size: 13px; font-weight: 500; }
+.ar .in { padding: 8px 10px; text-align: center; font-weight: 700; }
+.ar.sub > span { font-weight: 500; color: var(--ink2); padding-left: 12px; }
+.ar.tot { border-bottom: 0; }
+.ar.tot > span, .ar.tot b { font-weight: 800; font-size: 16px; }
+.ar.tot b { text-align: center; }
+@media (max-width: 899px) {
+  .grid { font-size: 13px; }
+  .grid th, .grid td { padding: 9px 5px; }
+  .grid tbody th { padding-left: 10px; padding-right: 8px; }
+  .grid td { min-width: 44px; }
+  .grid td small { font-size: 10px; }
+}
