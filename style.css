@@ -364,3 +364,7 @@ textarea.in { min-height: 76px; }
 .grid tbody th button:hover { text-decoration-color: var(--ink); }
 .grid .nd { color: #BDB5AC; font-weight: 700; }
 .grid .part { font-size: 10.5px; color: var(--mute); font-weight: 500; }
+@media (min-width: 900px) {
+  .sheet { max-height: 90vh; padding-bottom: 0; }
+  .sheet > .cancel[data-act="close"] { position: sticky; bottom: 0; margin: 10px -28px 0; width: calc(100% + 56px); background: var(--bg); box-shadow: 0 -1px 0 var(--line); min-height: 52px; z-index: 3; }
+}
