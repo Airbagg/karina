@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FAF7F3">
+<title>Уроки Карины</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="who" role="group" aria-label="Смотреть как">
+  <span class="lbl">смотреть как:</span>
+  <button data-act="role" data-role="k" aria-pressed="true">Карина</button>
+  <button data-act="role" data-role="s" aria-pressed="false">Ученик</button>
+  <button class="reset" data-act="reset">сбросить пример</button>
+</div>
+<div class="app" id="app"></div>
+<div class="sheet-wrap" id="sheet" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

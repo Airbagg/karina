@@ -1,0 +1,736 @@
+/* Уроки Карины. Прототип: данные в памяти + localStorage. Сегодня зафиксировано: сб, 17 октября 2026, 14:00. */
+'use strict';
+const TODAY = '2026-10-17', NOWT = '14:00';
+const KEY = 'karina-lessons-proto-v1';
+const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const WDN = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+const MG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MN = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const MS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const SECTIONS = [['Listening', 20], ['Reading', 20], ['Grammar & Vocabulary', 18], ['Letter', 6], ['Essay', 14], ['Speaking', 20]];
+const TIMES = ['10:00', '11:30', '15:00', '16:00', '17:00', '18:00', '19:00', '19:30'];
+
+/* ---------- даты ---------- */
+const pad = n => String(n).padStart(2, '0');
+const D = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const add = (s, n) => { const d = D(s); d.setDate(d.getDate() + n); return iso(d); };
+const wd = s => WD[D(s).getDay()];
+const dm = s => `${D(s).getDate()} ${MG[D(s).getMonth()]}`;
+const dms = s => `${D(s).getDate()} ${MS[D(s).getMonth()]}`;
+const longD = s => `${wd(s)}, ${dm(s)}`;
+const when = (s, t) => s === TODAY ? `сегодня в ${t}` : s === add(TODAY, 1) ? `завтра в ${t}` : s === add(TODAY, -1) ? `вчера в ${t}` : `${longD(s)} в ${t}`;
+const isPast = l => l.date < TODAY || (l.date === TODAY && l.time <= NOWT);
+const byDT = (a, b) => (a.date + a.time).localeCompare(b.date + b.time);
+const plural = (n, a, b, c) => { const m = Math.abs(n) % 100, k = m % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k >= 2 && k <= 4 ? b : c; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const token = () => Array.from({ length: 12 }, () => 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 55)]).join('');
+const code4 = () => String(Math.floor(1000 + Math.random() * 9000));
+
+/* ---------- пример данных ---------- */
+function L(date, time, status, topic = '', hw = '', note = '', extra = {}) { return { id: uid(), date, time, status, topic, hw, note, ...extra }; }
+function seed() {
+  const masha = {
+    id: 'masha', name: 'Маша', goal: 'английский, подготовка к ЕГЭ', token: 'k7Qx9mP2vR4t', code: '1234', open: true, phones: ['+79000000000', '+79161234567'],
+    schedule: { days: [2, 5], time: '17:00' },
+    payments: [{ date: '2026-09-10', n: 8 }, { date: '2026-10-05', n: 4 }],
+    lessons: [
+      L('2026-09-11', '17:00', 'done', 'Hobbies. Лексика: виды хобби, фразовые глаголы', 'Progress me, Hobbies, sections 1, 2, 6, 5', 'Не начали грамматику'),
+      L('2026-09-15', '17:00', 'done', 'Hobbies. Лексика, повторение. Грамматика present simple / continuous', 'То же самое + грамматика на платформе'),
+      L('2026-09-18', '17:00', 'done', 'Hobbies. Повтор времён. Разбор задания speaking 3', 'Грамматика, учить лексику по преимуществам хобби'),
+      L('2026-09-23', '17:00', 'done', 'Hobbies. Преимущества и недостатки'),
+      L('2026-09-25', '17:00', 'done', 'Hobbies. Преимущества и недостатки. Разбор задания 4 устной части'),
+      L('2026-09-29', '17:00', 'done', 'Essay, задание 38: структура', 'Написать вступление по образцу'),
+      L('2026-10-02', '17:00', 'moved', '', '', 'Проспала', { movedTo: '2026-10-13' }),
+      L('2026-10-06', '17:00', 'done', 'Grammar: passive voice', 'Progress me, Grammar, section 3'),
+      L('2026-10-08', '17:00', 'moved', '', '', '', { movedTo: '2026-10-16' }),
+      L('2026-10-09', '17:00', 'done', 'Letter, задание 37: письмо другу', 'Письмо по теме Hobbies'),
+      L('2026-10-13', '17:00', 'done', 'Essay: аргументы и примеры', 'Эссе по плану, 200-250 слов', 'Хорошо держит структуру', { from: '2026-10-02' }),
+      L('2026-10-16', '17:00', 'plan', '', '', '', { from: '2026-10-08' }),
+      L('2026-10-20', '17:00', 'plan', 'Essay: разбор ошибок по критериям', '', '', { auto: true }),
+      L('2026-10-23', '17:00', 'plan', 'Listening, задания 1-3', '', '', { auto: true }),
+    ],
+    progress: [
+      { id: uid(), date: '2026-09-12', sec: 'Grammar & Vocabulary', score: 10, max: 18 },
+      { id: uid(), date: '2026-09-26', sec: 'Grammar & Vocabulary', score: 12, max: 18 },
+      { id: uid(), date: '2026-10-10', sec: 'Grammar & Vocabulary', score: 16, max: 18 },
+      { id: uid(), date: '2026-09-12', sec: 'Essay', score: 5, max: 14 },
+      { id: uid(), date: '2026-09-26', sec: 'Essay', score: 5, max: 14 },
+      { id: uid(), date: '2026-10-10', sec: 'Essay', score: 8, max: 14 },
+    ],
+    mocks: [{ id: uid(), date: '2026-10-03', p: 75, s: 94, link: 'https://example.com/proverka' }],
+  };
+  const simple = (id, name, goal, days, time, pays, done, topics) => ({
+    id, name, goal, token: token(), code: code4(), open: true, phones: ['+7999' + code4() + '000'], schedule: { days, time }, payments: pays,
+    lessons: done.map((d, i) => L(d, time, 'done', topics[i % topics.length])), progress: [], mocks: [],
+  });
+  const st = [
+    masha,
+    simple('petya', 'Петя', 'английский, 8 класс', [6], '15:00', [{ date: '2026-09-12', n: 4 }], ['2026-09-19', '2026-09-26', '2026-10-03', '2026-10-10'], ['Present perfect', 'Неправильные глаголы', 'Чтение: короткие тексты', 'Контрольная по модулю']),
+    simple('timur', 'Тимур', 'подготовка к ЕГЭ', [3, 6], '11:30', [{ date: '2026-10-06', n: 8 }], ['2026-10-07', '2026-10-10', '2026-10-14'], ['Reading, задания 10-17', 'Grammar, задания 19-24', 'Essay: план']),
+    simple('anya', 'Аня', 'разговорный, B1', [3, 6], '18:00', [{ date: '2026-09-19', n: 8 }], ['2026-09-23', '2026-09-26', '2026-09-30', '2026-10-03', '2026-10-07', '2026-10-10', '2026-10-14'], ['Сериалы: Friends', 'Путешествия', 'Small talk', 'Рассказ о себе']),
+    simple('oleg', 'Олег', 'собеседование, B2', [1], '19:30', [{ date: '2026-10-01', n: 8 }], ['2026-10-12'], ['Рассказ о проектах']),
+  ];
+  st.forEach(s => regen(s));
+  return { students: st };
+}
+
+/* будущие уроки по расписанию: на 4 недели вперёд; перенесённые и правленные руками не трогаем */
+function regen(s) {
+  s.lessons = s.lessons.filter(l => !(l.auto && l.status === 'plan' && !isPast(l) && !l.topic));
+  for (let i = 0; i <= 27; i++) {
+    const d = add(TODAY, i);
+    if (!s.schedule.days.includes(D(d).getDay())) continue;
+    const l = { date: d, time: s.schedule.time };
+    if (isPast(l)) continue;
+    if (s.lessons.some(x => x.date === d && x.status !== 'moved' && x.status !== 'free' && x.status !== 'burn')) continue;
+    s.lessons.push(L(d, s.schedule.time, 'plan', '', '', '', { auto: true }));
+  }
+  s.lessons.sort(byDT);
+}
+
+/* ---------- расчёт оплат ---------- */
+const charged = l => l.status === 'done' || l.status === 'burn' || (l.status === 'moved' && l.burn);
+function calc(s) {
+  const paid = s.payments.reduce((a, p) => a + p.n, 0);
+  const used = s.lessons.filter(charged).length;
+  const rem = paid - used;
+  const plans = s.lessons.filter(l => l.status === 'plan').sort(byDT);
+  const paidIds = new Set(plans.slice(0, Math.max(rem, 0)).map(l => l.id));
+  const lastPack = s.payments.length ? s.payments[s.payments.length - 1].n : 0;
+  const of = Math.max(lastPack, rem, 0);
+  const pending = plans.filter(isPast);
+  const upcoming = plans.filter(l => !isPast(l));
+  const firstUnpaid = upcoming.find(l => !paidIds.has(l.id));
+  return { paid, used, rem, of, lastPack, paidIds, pending, upcoming, firstUnpaid, next: upcoming[0] };
+}
+function lastHW(s) {
+  const done = s.lessons.filter(l => l.status === 'done' && l.hw).sort(byDT).pop();
+  if (!done) return null;
+  const nx = s.lessons.filter(l => l.status === 'plan' && l.date > done.date).sort(byDT)[0];
+  return { text: done.hw, due: nx ? nx.date : null, from: done.date };
+}
+
+/* ---------- состояние ---------- */
+let data, auth, ui, sheet = null, toastT = 0, undoSnap = null, lastScreenKey = '', isShot = false;
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { if (isShot) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* приватный режим: живём в памяти */ } },
+};
+function load() {
+  data = store.get(KEY) || seed();
+  auth = store.get(KEY + ':auth') || { k: false, s: {} };
+  ui = { role: 'k', ktab: 'students', sid: null, dsid: 'masha', stab: 'now', stoken: 'k7Qx9mP2vR4t', more: {}, push: 0 };
+}
+function save() { store.set(KEY, data); store.set(KEY + ':auth', auth); }
+const S = id => data.students.find(s => s.id === id);
+const desk = () => matchMedia('(min-width: 900px)').matches;
+function commit(fn, msg) {
+  const snap = JSON.stringify(data);
+  fn();
+  save();
+  render();
+  toast(msg, snap);
+}
+
+/* ---------- иконки ---------- */
+const I = {
+  back: '<svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  arr: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  l: '<svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  r: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  tick: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  people: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.4 3.4 0 010 6.4M18 14.8c2 .7 3.2 2.4 3.6 5.2"/></svg>',
+  cal: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  now: '<svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V20H4z"/><path d="M10 20v-5h4v5"/></svg>',
+  hist: '<svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M7.5 15l4-4.5 3 2.5 5-6"/></svg>',
+};
+
+/* ---------- куски ---------- */
+function remBlock(s, c, student) {
+  const r = Math.max(c.rem, 0);
+  const pct = c.of ? Math.round(r / c.of * 100) : 0;
+  const word = plural(r, 'урок оплачен', 'урока оплачено', 'уроков оплачено');
+  let note = '';
+  if (c.rem < 0) note = `<div class="note">Долг ${-c.rem} ${plural(-c.rem, 'урок', 'урока', 'уроков')}. Пакет на 4 или 8 уроков</div>`;
+  else if (c.firstUnpaid) note = `<div class="note">${c.firstUnpaid.date === (c.next && c.next.date) ? 'Следующий урок не оплачен' : 'С ' + dm(c.firstUnpaid.date) + ' нужна оплата'}</div>`;
+  else if (!student) note = `<div class="okline">Все ближайшие уроки оплачены</div>`;
+  return `<div class="big num ${r === 0 ? 'zero' : ''}">${r}<small>${word}</small></div>
+    <div class="bar" style="height:6px;margin-top:14px"><i style="width:${pct}%${r <= 1 ? ';background:var(--red)' : ''}"></i></div>
+    <div class="legend">${c.lastPack ? `<span>пакет ${c.lastPack} ${plural(c.lastPack, 'урок', 'урока', 'уроков')}</span><span>проведено ${Math.max(c.of - r, 0)}</span>` : ''}<span>осталось ${r}</span></div>${note}`;
+}
+function payTag(c, l) { return c.paidIds.has(l.id) ? '<span class="st g">оплачен</span>' : '<span class="st r">не оплачен</span>'; }
+function upRow(s, c, l, karina) {
+  const topic = l.topic ? esc(l.topic) : '<span class="mt">тема по плану</span>';
+  const moved = l.from ? `<div class="hwl"><em>перенос с ${dms(l.from)}</em></div>` : '';
+  const acts = karina ? `<div class="acts"><button class="lnk" data-act="edit" data-l="${l.id}">изменить</button><button class="lnk" data-act="mark" data-mode="move" data-l="${l.id}">перенести</button><button class="lnk" data-act="mark" data-mode="cancel" data-l="${l.id}">отменить</button></div>` : '';
+  return `<div class="les" data-row="${l.id}"><div class="d"><b class="num">${D(l.date).getDate()}</b><span>${wd(l.date)}</span></div>
+    <div class="t"><b class="num">${l.time}</b><div class="tp">${topic}</div>${moved}</div><div class="st">${payTag(c, l)}${acts}</div></div>`;
+}
+function statusTag(l) {
+  if (l.status === 'moved') return `<span class="tag">перенос на ${dms(l.movedTo)}${l.burn ? ', урок списан' : ''}</span>`;
+  if (l.status === 'burn') return '<span class="tag r">отмена, урок сгорел</span>';
+  if (l.status === 'free') return '<span class="tag">отмена без списания</span>';
+  if (l.status === 'plan') return '<span class="tag r">ждёт отметки</span>';
+  if (l.from) return `<span class="tag">перенос с ${dms(l.from)}</span>`;
+  return '';
+}
+function pastRow(l, karina) {
+  const tag = statusTag(l);
+  let topic = l.topic ? `<div class="tp">${esc(l.topic)}</div>` : l.status === 'done' ? '<div class="tp mute">тема не записана</div>' : l.status === 'plan' ? `<div class="tp mute">${karina ? 'отметьте, как прошёл урок' : 'тема появится после урока'}</div>` : '';
+  const hw = l.hw ? `<div class="hwl"><em>ДЗ:</em> ${esc(l.hw)}</div>` : '';
+  const own = karina && l.note ? `<div class="own"><em>только для тебя:</em> ${esc(l.note)}</div>` : '';
+  const cls = l.status === 'moved' ? 'moved' : (l.status === 'burn' || l.status === 'free') ? 'cancel' : '';
+  const inner = `<div class="d"><b class="num">${D(l.date).getDate()}</b><span>${wd(l.date)}</span></div><div class="t"><b class="num">${l.time}${tag ? ' &nbsp;' + tag : ''}</b>${topic}${hw}${own}</div>`;
+  return karina ? `<button class="les past btnrow ${cls}" data-act="${l.status === 'plan' ? 'mark' : 'editpast'}" data-mode="done" data-l="${l.id}" data-row="${l.id}">${inner}</button>`
+    : `<div class="les past ${cls}">${inner}</div>`;
+}
+function months(list, karina) {
+  const groups = {};
+  list.forEach(l => { const k = l.date.slice(0, 7); (groups[k] = groups[k] || []).push(l); });
+  return Object.keys(groups).sort().reverse().map(k => {
+    const [y, m] = k.split('-').map(Number);
+    const ls = groups[k].sort(byDT).reverse();
+    const n = ls.filter(l => l.status === 'done').length;
+    return `<h2><span>${MN[m - 1]}${y !== 2026 ? ' ' + y : ''}</span><span>${n} ${plural(n, 'урок', 'урока', 'уроков')}</span></h2>${ls.map(l => pastRow(l, karina)).join('')}`;
+  }).join('');
+}
+function progressBlock(s, karina) {
+  const rows = SECTIONS.map(([sec]) => {
+    const es = s.progress.filter(p => p.sec === sec).sort((a, b) => a.date.localeCompare(b.date));
+    if (!es.length) return `<div class="prg"><div class="h"><b>${sec}</b><span class="v none">нет результатов</span></div></div>`;
+    const last = es[es.length - 1];
+    const way = es.length > 1 ? `<div class="way num">${es.map(e => e.score).join(' → ')} ${es[es.length - 1].score > es[0].score ? `<b>+${es[es.length - 1].score - es[0].score}</b>` : ''} &nbsp;с ${dms(es[0].date)}</div>` : `<div class="way">${dm(last.date)}</div>`;
+    return `<div class="prg"><div class="h"><b>${sec}</b><span class="v num">${last.score}<small> из ${last.max}</small></span></div>${way}<div class="bar"><i style="width:${Math.round(last.score / last.max * 100)}%"></i></div></div>`;
+  }).join('');
+  return `<h2><span>Прогресс по разделам</span>${karina ? `<button class="lnk" data-act="addprog">+ результат</button>` : ''}</h2>${rows}`;
+}
+function mocksBlock(s, karina) {
+  const rows = s.mocks.slice().sort((a, b) => b.date.localeCompare(a.date)).map(m => `<div class="mock" data-row="${m.id}"><div class="n"><b>Пробник, ${dm(m.date)}</b><div>${m.link ? `<a class="lnk" style="min-height:0" href="${esc(m.link)}" target="_blank" rel="noopener">проверка работы</a>` : 'без ссылки'}</div></div>
+    <div class="sc"><b class="num">${m.p}</b><span>первичный</span></div><div class="sc"><b class="num">${m.s}</b><span>вторичный</span></div></div>`).join('');
+  return `<h2><span>Пробники</span>${karina ? `<button class="lnk" data-act="addmock">+ пробник</button>` : ''}</h2>${rows || '<div class="empty">Пробников пока не было</div>'}`;
+}
+function askCard(s, l, d) {
+  const q = `${s.name}, ${when(l.date, l.time)}`;
+  if (d) return `<div class="ask ask-d"><div class="q">${q} <span>· как прошёл урок?</span></div><div class="btns">${askBtns(l)}</div></div>`;
+  return `<div class="ask"><div class="q">${q}<span><br>Как прошёл урок?</span></div><div class="btns">${askBtns(l)}</div></div>`;
+}
+const askBtns = l => `<button class="btn main" data-act="mark" data-mode="done" data-l="${l.id}">Проведён</button><button class="btn" data-act="mark" data-mode="move" data-l="${l.id}">Перенос</button><button class="btn" data-act="mark" data-mode="cancel" data-l="${l.id}">Отмена</button>`;
+const schedText = s => s.schedule.days.length ? `${[1, 2, 3, 4, 5, 6, 0].filter(d => s.schedule.days.includes(d)).map(d => WD[d]).join(', ')} в ${s.schedule.time}` : 'не задано';
+function stRow(s, cur) {
+  const c = calc(s);
+  const r = Math.max(c.rem, 0);
+  const nx = c.next ? when(c.next.date, c.next.time) : 'уроков нет';
+  const warn = c.next && !c.paidIds.has(c.next.id) ? '<div class="pay">нужна оплата</div>' : '';
+  return `<button class="row ${r <= 1 ? 'lowr' : ''}" data-act="open" data-s="${s.id}" ${cur ? 'aria-current="page"' : ''}><div class="n"><div class="nm">${esc(s.name)}</div><div class="nx">${nx}</div>${warn}</div>
+    <div class="cnt"><div class="v num">${r} <small>из ${c.of}</small></div><div class="bar"><i style="width:${c.of ? Math.round(r / c.of * 100) : 0}%"></i></div></div></button>`;
+}
+function todayCount() { return data.students.reduce((a, s) => a + s.lessons.filter(l => l.date === TODAY && l.status === 'plan').length, 0); }
+
+/* ---------- экраны Карины ---------- */
+function kStudents() {
+  const asks = [];
+  data.students.forEach(s => calc(s).pending.forEach(l => asks.push([s, l])));
+  asks.sort((a, b) => byDT(a[1], b[1]));
+  const n = todayCount();
+  return `<div class="top"><span>Уроки Карины</span><img class="av" src="avatar.jpg" alt=""></div>
+    <h1>Ученики</h1><div class="sub">${WDN[D(TODAY).getDay()]}, ${dm(TODAY)} · сегодня ${n} ${plural(n, 'урок', 'урока', 'уроков')}</div>
+    ${asks.map(([s, l]) => askCard(s, l)).join('')}
+    <h2><span>Все ученики</span><button class="lnk" data-act="addstudent">+ ученик</button></h2>
+    ${data.students.map(s => stRow(s)).join('')}
+    <div style="padding-top:18px"><button class="lnk mute" data-act="logout">Выйти</button></div>`;
+}
+function kWeek() {
+  let html = `<div class="top"><span>Уроки Карины</span><img class="av only-m" src="avatar.jpg" alt=""></div><h1>Неделя</h1><div class="sub">с ${dm(TODAY)} по ${dm(add(TODAY, 6))}</div>`;
+  for (let i = 0; i < 7; i++) {
+    const d = add(TODAY, i);
+    const ls = [];
+    data.students.forEach(s => { const c = calc(s); s.lessons.filter(l => l.date === d && l.status === 'plan').forEach(l => ls.push([s, l, c])); });
+    ls.sort((a, b) => a[1].time.localeCompare(b[1].time));
+    html += `<h2><span>${i === 0 ? 'Сегодня, ' : i === 1 ? 'Завтра, ' : ''}${i < 2 ? dm(d) : longD(d)}</span><span>${ls.length || ''}</span></h2>`;
+    html += ls.length ? ls.map(([s, l, c]) => `<button class="les btnrow" data-act="open" data-s="${s.id}"><div class="d"><b class="num" style="font-size:16px">${l.time}</b></div><div class="t"><b>${esc(s.name)}</b><div class="tp ${l.topic ? '' : 'mute'}">${l.topic ? esc(l.topic) : 'тема по плану'}</div></div><div class="st">${isPast(l) ? '<span class="st r">отметить</span>' : payTag(c, l)}</div></button>`).join('') : '<div class="empty">Уроков нет</div>';
+  }
+  return html;
+}
+function kStudent(s, d) {
+  const c = calc(s);
+  const asks = c.pending.map(l => askCard(s, l, d)).join('');
+  const all = ui.more[s.id];
+  const lim = d ? 3 : 4;
+  const ups = c.upcoming.slice(0, all ? 99 : lim);
+  const upHtml = `<h2><span>Ближайшие</span><button class="lnk" data-act="addlesson">+ урок</button></h2>${ups.map(l => upRow(s, c, l, true)).join('') || '<div class="empty">Уроков не запланировано</div>'}
+    ${c.upcoming.length > lim ? `<button class="lnk mute" data-act="more">${all ? 'свернуть' : 'ещё ' + (c.upcoming.length - lim)}</button>` : ''}`;
+  const past = s.lessons.filter(l => l.status !== 'plan' || isPast(l));
+  const histHtml = `${months(past, true) || '<h2>Уроки</h2><div class="empty">Уроков ещё не было</div>'}`;
+  const pays = s.payments.slice().reverse().map(p => `<div class="pr"><b class="num" style="font-weight:600">Пакет ${p.n}</b><span>${dm(p.date)}</span></div>`).join('');
+  const settings = `<h2>Ученик</h2>
+    <div class="setrow"><span class="k">Расписание: <b>${schedText(s)}</b></span><button class="lnk" data-act="sched">изменить</button></div>
+    <div class="setrow"><span class="k">Доступ: ${s.open ? `<b class="num">${s.phones.length ? '+7 ' + s.phones[0].replace(/\D/g, '').slice(1, 4) + ' …' : 'номер не указан'}</b>, код <b class="num">${s.code}</b>` : '<b style="color:var(--red)">закрыт</b>'}</span><button class="lnk" data-act="access">изменить</button></div>`;
+  const payHtml = `${remBlock(s, c, false)}<div class="btns" style="margin-top:16px"><button class="btn" data-act="pack" data-n="4">+ Пакет 4</button><button class="btn" data-act="pack" data-n="8">+ Пакет 8</button></div>`;
+  if (d) {
+    return `<div class="wrap" style="padding-top:28px">${asks}
+      <div class="cols" style="margin-top:${asks ? 28 : 0}px"><div>
+        <h1 style="margin-top:0">${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div>
+        ${upHtml}${histHtml}
+      </div><div>
+        ${payHtml}
+        ${settings}
+        ${progressBlock(s, true)}${mocksBlock(s, true)}
+        <h2>Оплаты</h2><div class="pays">${pays || '<div class="empty">Оплат пока не было</div>'}</div>
+      </div></div></div>`;
+  }
+  return `<div class="top"><button class="back" data-act="back">${I.back}Ученики</button><img class="av" src="avatar.jpg" alt=""></div>
+    ${asks}<h1>${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div>
+    ${payHtml}${settings}${upHtml}${histHtml}
+    <h2>Оплаты</h2><div class="pays">${pays || '<div class="empty">Оплат пока не было</div>'}</div>
+    ${progressBlock(s, true)}${mocksBlock(s, true)}`;
+}
+
+/* ---------- экраны ученика ---------- */
+function sNow(s, d) {
+  const c = calc(s);
+  const ups = c.upcoming.slice(0, 3).map(l => upRow(s, c, l, false)).join('') || '<div class="empty">Уроков не запланировано</div>';
+  const hw = lastHW(s);
+  const hwHtml = `<h2>Домашнее задание</h2>${hw ? `<div class="hw"><div class="m">${hw.due ? 'к ' + dm(hw.due) : 'с урока ' + dm(hw.from)}</div>${esc(hw.text)}</div>` : '<div class="empty">Заданий нет</div>'}`;
+  const head = `<div class="top only-m"><span>Уроки с Кариной</span><img class="av" src="avatar.jpg" alt=""></div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div>`;
+  if (d) return `<div class="wrap" style="padding-top:36px">${head}<div class="cols"><div>${remBlock(s, c, true)}${hwHtml}</div><div><h2 style="margin-top:28px"><span>Ближайшие</span><span>${schedText(s)}</span></h2>${ups}</div></div></div>`;
+  return `${head}${remBlock(s, c, true)}<h2><span>Ближайшие</span><span style="font-weight:500">${schedText(s)}</span></h2>${ups}${hwHtml}`;
+}
+function sHist(s, d) {
+  const past = s.lessons.filter(l => l.status !== 'plan' || isPast(l));
+  const done = s.lessons.filter(l => l.status === 'done').length;
+  const head = `<div class="top only-m"><span>Уроки с Кариной</span><img class="av" src="avatar.jpg" alt=""></div><h1>История и прогресс</h1><div class="sub">${done} ${plural(done, 'урок проведён', 'урока проведено', 'уроков проведено')} с ${dm(s.lessons[0] ? s.lessons[0].date : TODAY)}</div>`;
+  const prog = progressBlock(s, false) + mocksBlock(s, false);
+  if (d) return `<div class="wrap" style="padding-top:36px">${head}<div class="cols"><div>${months(past, false)}</div><div>${prog}</div></div></div>`;
+  return `${head}${prog}${months(past, false)}`;
+}
+
+/* ---------- входы ---------- */
+function kLogin() {
+  return `<div style="max-width:380px;margin:0 auto;padding-top:9vh">
+    <img class="av" src="avatar.jpg" alt="" style="width:64px;height:64px">
+    <h1 style="margin-top:20px">Уроки Карины</h1><div class="sub">Вход для преподавателя</div>
+    <label class="fld" style="margin-top:28px"><span>Пароль</span><input class="in" id="pw" type="password" autocomplete="current-password" placeholder="Пароль"></label>
+    <button class="check" data-act="remember" aria-pressed="${ui.remember !== false}"><span class="bx">${I.tick}</span><span><b>Запомнить это устройство</b><small>Больше не спросим пароль на этом телефоне или Mac</small></span></button>
+    <div class="info r" id="pwerr" hidden style="color:var(--red);font-weight:600">Введите пароль</div>
+    <button class="btn main wide" data-act="login" style="margin-top:22px">Войти</button>
+    <p class="fine">В примере подойдёт любой пароль.</p></div>`;
+}
+function sLogin(tok) {
+  const s = data.students.find(x => x.token === tok);
+  const phone = s && s.open ? s.phones[0] : '';
+  return `<div style="max-width:380px;margin:0 auto;padding-top:9vh">
+    <img class="av" src="avatar.jpg" alt="" style="width:64px;height:64px">
+    <h1 style="margin-top:20px">Уроки с Кариной</h1>
+    <div class="sub" style="margin-top:6px">Расписание, оплаты и прогресс. Только просмотр.</div>
+    <label class="fld" style="margin-top:28px"><span>Телефон ученика или родителя</span><input class="in num" id="phone" inputmode="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__" value="${esc(fmtPhone(phone))}"></label>
+    <div class="fld"><span>Код из 4 цифр <em>· его даёт Карина</em></span>
+    <label class="codebox"><input id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" aria-label="Код из 4 цифр">
+      <span class="cells">${[0, 1, 2, 3].map(i => `<span class="cell num" data-i="${i}"></span>`).join('')}</span></label></div>
+    <div id="codeerr" class="info" style="color:var(--red);font-weight:600" hidden>Сначала номер телефона</div>
+    <p class="fine">После входа это устройство запомним, код больше не спросим.<br>В примере: +7 900 000-00-00, код 1234.</p></div>`;
+}
+function fmtPhone(v) {
+  const d = String(v || '').replace(/\D/g, '').replace(/^[78]/, '').slice(0, 10);
+  if (!d) return '';
+  let out = '+7 (' + d.slice(0, 3);
+  if (d.length > 3) out += ') ' + d.slice(3, 6);
+  if (d.length > 6) out += '-' + d.slice(6, 8);
+  if (d.length > 8) out += '-' + d.slice(8, 10);
+  return out;
+}
+
+/* ---------- сборка ---------- */
+function render() {
+  const app = document.getElementById('app');
+  const d = desk();
+  document.querySelectorAll('.who [data-role]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === ui.role)));
+  let side = '', screen = '', tabs = '', key = '';
+  if (ui.role === 'k' && !auth.k) { screen = kLogin(); key = 'klogin'; }
+  else if (ui.role === 's' && !auth.s[ui.stoken]) { screen = sLogin(ui.stoken); key = 'slogin'; }
+  else if (ui.role === 'k') {
+    if (d) {
+      const n = todayCount();
+      side = `<aside class="side"><div class="top"><span>Уроки Карины</span><img class="av" src="avatar.jpg" alt=""></div>
+        <h1>Ученики</h1><div class="sub">сегодня ${n} ${plural(n, 'урок', 'урока', 'уроков')}</div>
+        <button class="nav" data-act="ktab" data-t="week" style="margin-top:14px" ${ui.ktab === 'week' ? 'aria-current="page"' : ''}>Неделя<span class="c">${data.students.reduce((a, s) => a + calc(s).pending.length, 0) || ''}</span></button>
+        <div style="height:8px"></div>
+        ${data.students.map(s => stRow(s, ui.ktab === 'students' && ui.dsid === s.id)).join('')}
+        <button class="lnk" data-act="addstudent" style="padding:8px 10px">+ ученик</button>
+        <div class="foot"><button class="lnk mute" data-act="logout" style="padding:0 10px">Выйти</button></div></aside>`;
+      if (ui.ktab === 'week') { screen = kWeek(); key = 'kweek'; } else { const s = S(ui.dsid) || data.students[0]; ui.dsid = s.id; screen = kStudent(s, true); key = 'kd:' + s.id; }
+    } else {
+      if (ui.sid && S(ui.sid)) { screen = kStudent(S(ui.sid), false); key = 'ks:' + ui.sid; }
+      else { screen = ui.ktab === 'week' ? kWeek() : kStudents(); key = 'k' + ui.ktab; }
+      tabs = `<nav class="tabs"><button class="tb" data-act="ktab" data-t="students" ${ui.ktab === 'students' && !ui.sid ? 'aria-current="page"' : ''}>${I.people}Ученики</button><button class="tb" data-act="ktab" data-t="week" ${ui.ktab === 'week' && !ui.sid ? 'aria-current="page"' : ''}>${I.cal}Неделя</button></nav>`;
+    }
+  } else {
+    const s = data.students.find(x => x.token === ui.stoken);
+    if (!s || !s.open) { delete auth.s[ui.stoken]; save(); return render(); }
+    screen = ui.stab === 'hist' ? sHist(s, d) : sNow(s, d);
+    key = 's' + ui.stab;
+    const nav = `<button class="${d ? 'nav' : 'tb'}" data-act="stab" data-t="now" ${ui.stab === 'now' ? 'aria-current="page"' : ''}>${d ? '' : I.now}Сейчас</button><button class="${d ? 'nav' : 'tb'}" data-act="stab" data-t="hist" ${ui.stab === 'hist' ? 'aria-current="page"' : ''}>${d ? '' : I.hist}История и прогресс</button>`;
+    if (d) side = `<aside class="side"><div class="top"><span>Уроки с Кариной</span><img class="av" src="avatar.jpg" alt=""></div><h1>${esc(s.name)}</h1><div class="sub">${esc(s.goal)}</div><div style="height:14px"></div>${nav}<div class="foot"><button class="lnk mute" data-act="slogout" style="padding:0 10px">Выйти на этом устройстве</button></div></aside>`;
+    else tabs = `<nav class="tabs">${nav}</nav>`;
+  }
+  const old = app.querySelector('.scr');
+  const keep = old && key === lastScreenKey ? old.scrollTop : 0;
+  let anim = '';
+  if (key !== lastScreenKey && lastScreenKey) anim = ui.push === 1 ? 'in-right' : ui.push === -1 ? 'in-left' : 'in-fade';
+  ui.push = 0;
+  app.innerHTML = `${side}<div class="pane"><div class="scr ${anim}">${screen}</div>${tabs}</div>`;
+  const scr = app.querySelector('.scr');
+  scr.scrollTop = keep;
+  lastScreenKey = key;
+  if (key === 'slogin') bindCode();
+  if (sheet) drawSheet();
+}
+
+/* ---------- листы ---------- */
+function openSheet(st) { sheet = st; const w = document.getElementById('sheet'); w.hidden = false; w.classList.remove('closing'); drawSheet(true); }
+function closeSheet() {
+  const w = document.getElementById('sheet');
+  if (!sheet) return;
+  sheet = null;
+  if (isShot) { w.hidden = true; return; }
+  w.classList.add('closing');
+  setTimeout(() => { if (!sheet) { w.hidden = true; w.innerHTML = ''; w.classList.remove('closing'); } }, 240);
+}
+function calHtml(st, s) {
+  const base = D(st.cal);
+  const dow = (base.getDay() + 6) % 7;
+  const start = add(iso(base), -dow);
+  const end = add(start, 13);
+  const busy = new Set(s ? s.lessons.filter(l => l.status === 'plan' || l.status === 'done').map(l => l.date) : []);
+  const title = D(start).getMonth() === D(end).getMonth() ? `${MN[D(start).getMonth()]}` : `${MN[D(start).getMonth()]} · ${MN[D(end).getMonth()].toLowerCase()}`;
+  let cells = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map(w => `<span class="wd">${w}</span>`).join('');
+  for (let i = 0; i < 14; i++) {
+    const d = add(start, i);
+    cells += `<button class="dy num ${d === TODAY ? 'today' : ''} ${d < TODAY ? 'off' : ''}" data-act="pickday" data-d="${d}" aria-pressed="${d === st.date}" aria-label="${longD(d)}">${D(d).getDate()}${busy.has(d) ? '<i></i>' : ''}</button>`;
+  }
+  return `<div class="cal"><div class="ch"><button data-act="calnav" data-n="-7" aria-label="Раньше">${I.l}</button><span>${title}</span><button data-act="calnav" data-n="7" aria-label="Позже">${I.r}</button></div><div class="grid">${cells}</div></div>`;
+}
+function timesHtml(st) {
+  const opts = TIMES.includes(st.time) ? TIMES : [...TIMES.slice(0, 7), st.time];
+  return `<div class="times">${opts.map(t => `<button data-act="picktime" data-t="${t}" aria-pressed="${t === st.time}">${t}</button>`).join('')}</div>
+    <label class="fld" style="margin-top:8px"><span><em>или своё время</em></span><input class="in num" type="time" data-f="time" value="${st.time}" style="max-width:160px"></label>`;
+}
+function drawSheet(first) {
+  const w = document.getElementById('sheet');
+  const st = sheet;
+  const s = S(st.sid);
+  let h = '';
+  if (st.type === 'mark' || st.type === 'editpast') {
+    const l = s.lessons.find(x => x.id === st.lid);
+    const c = calc(s);
+    const editing = st.type === 'editpast';
+    h = `<h3>${esc(s.name)}</h3><div class="shd">${longD(l.date)} в ${l.time}${editing ? ' · правка урока' : ''}</div>`;
+    if (!editing) h += `<div class="seg">${[['done', 'Проведён'], ['move', 'Перенос'], ['cancel', 'Отмена']].map(([m, t]) => `<button data-act="mode" data-mode="${m}" aria-pressed="${st.mode === m}">${t}</button>`).join('')}</div>`;
+    h += `<div class="mode" data-k="${st.mode}">`;
+    if (st.mode === 'done') {
+      const after = c.rem - 1;
+      h += `<label class="fld"><span>Тема урока</span><textarea class="in" data-f="topic" rows="2" style="min-height:0" placeholder="Например, Hobbies. Разбор задания 4">${esc(st.topic)}</textarea></label>
+        <label class="fld"><span>Домашнее задание${c.upcoming[0] ? ` <em>к ${dm(c.upcoming[0].date)}</em>` : ''}</span><textarea class="in" data-f="hw" rows="3" placeholder="Что сделать к следующему уроку">${esc(st.hw)}</textarea></label>
+        <label class="fld"><span>Комментарий <em>видишь только ты</em></span><textarea class="in own" data-f="note" rows="2" placeholder="Например, не начали грамматику">${esc(st.note)}</textarea></label>
+        ${editing ? '' : `<div class="info">${after >= 0 ? `Спишется 1 урок из пакета. Останется <b class="num">${after} из ${c.of}</b>.` : `<span class="r">Оплаченных уроков нет: урок уйдёт в долг.</span>`} Тему и ДЗ ${esc(s.name)} увидит сразу.</div>`}
+        <button class="btn main wide" data-act="savemark">${editing ? 'Сохранить' : 'Сохранить урок'}</button>`;
+    } else if (st.mode === 'move') {
+      h += `<div class="fromto"><span class="was">${longD(l.date)}, ${l.time}</span>${I.arr}<span class="now">${longD(st.date)}, ${st.time}</span></div>
+        ${calHtml(st, s)}${timesHtml(st)}
+        <button class="check" data-act="nocharge" aria-pressed="${st.nocharge}"><span class="bx">${I.tick}</span><span><b>Не списывать урок</b><small>Снимите, если перенос поздний и урок сгорает</small></span></button>
+        <button class="btn main wide" data-act="savemove">Перенести на ${dm(st.date)}</button>`;
+    } else {
+      h += `<div class="opts"><button class="opt" data-act="burn" data-v="1" aria-pressed="${st.burn}"><span class="radio"></span><span><b>Урок сгорает</b><small>Спишется из пакета, как проведённый</small></span></button>
+        <button class="opt" data-act="burn" data-v="0" aria-pressed="${!st.burn}"><span class="radio"></span><span><b>Без списания</b><small>Урок останется в оплаченных</small></span></button></div>
+        <button class="btn red wide" data-act="savecancel">Отменить урок</button>`;
+    }
+    h += `</div>`;
+  } else if (st.type === 'edit' || st.type === 'addlesson') {
+    const l = st.lid && s.lessons.find(x => x.id === st.lid);
+    h = `<h3>${st.type === 'edit' ? 'Изменить урок' : 'Новый урок'}</h3><div class="shd">${esc(s.name)}${l ? ` · сейчас ${longD(l.date)}, ${l.time}` : ''}</div>
+      ${calHtml(st, s)}${timesHtml(st)}
+      <label class="fld"><span>Тема <em>необязательно</em></span><input class="in" data-f="topic" value="${esc(st.topic)}" placeholder="Тема по плану"></label>
+      <button class="btn main wide" data-act="savelesson">${st.type === 'edit' ? 'Сохранить' : 'Добавить урок'} · ${longD(st.date)}, ${st.time}</button>`;
+  } else if (st.type === 'sched') {
+    const fut = s.lessons.filter(l => l.auto && l.status === 'plan' && !isPast(l)).length;
+    h = `<h3>Расписание</h3><div class="shd">${esc(s.name)} · сейчас ${schedText(s)}</div>
+      <div class="fld"><span>Дни недели</span><div class="days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-act="day" data-d="${d}" aria-pressed="${st.days.includes(d)}">${WD[d]}</button>`).join('')}</div></div>
+      <div class="fld"><span>Время</span>${timesHtml(st)}</div>
+      <div class="info">Уроки по расписанию на 4 недели вперёд пересчитаются (${fut} ${plural(fut, 'урок', 'урока', 'уроков')} сейчас). Перенесённые вручную и уроки с темой останутся как есть.</div>
+      <button class="btn main wide" data-act="savesched" ${st.days.length ? '' : 'disabled style="opacity:.4"'}>Сохранить расписание</button>`;
+  } else if (st.type === 'access') {
+    const url = location.href.split('#')[0].split('?')[0] + '#s=' + s.token;
+    h = `<h3>Доступ для ученика</h3><div class="shd">${esc(s.name)} и родители входят по номеру телефона и коду. Видят уроки, оплаты и прогресс, без твоих комментариев.</div>`;
+    if (!s.open) h += `<div class="note">Доступ закрыт. Вход по этим номерам и коду не работает.</div><button class="btn main wide" data-act="reopen">Открыть доступ с новым кодом</button>`;
+    else if (st.confirm) h += `<div class="note">${esc(s.name)} и родители выйдут на всех устройствах.</div><button class="btn red wide" data-act="revoke">Закрыть доступ</button><button class="cancel" data-act="noconfirm">Не закрывать</button>`;
+    else h += `<label class="fld"><span>Телефон ученика</span><input class="in num" inputmode="tel" data-f="ph0" value="${esc(fmtPhone(st.ph0))}" placeholder="+7 (___) ___-__-__"></label>
+      <label class="fld"><span>Телефон родителя <em>необязательно</em></span><input class="in num" inputmode="tel" data-f="ph1" value="${esc(fmtPhone(st.ph1))}" placeholder="+7 (___) ___-__-__"></label>
+      <label class="fld"><span>Код для входа</span><div class="two" style="align-items:center"><input class="in num" inputmode="numeric" maxlength="4" data-f="code" value="${esc(st.code)}" style="font-size:22px;letter-spacing:.2em;font-weight:700;max-width:140px"><button class="lnk" data-act="newcode" style="flex:none">другой код</button></div></label>
+      <button class="btn main wide" data-act="saveaccess">Сохранить</button>
+      <div class="setrow" style="margin-top:14px;border-top:1px solid var(--line)"><span class="k">Ссылка, где номер уже подставлен</span><button class="lnk" data-act="copy" data-v="${esc(url)}">скопировать</button></div>
+      <button class="cancel" data-act="askrevoke" style="color:var(--red);margin-top:10px">Закрыть доступ</button>`;
+  } else if (st.type === 'addstudent') {
+    h = `<h3>Новый ученик</h3>
+      <label class="fld"><span>Имя</span><input class="in" data-f="name" value="${esc(st.name)}" placeholder="Например, Лиза"></label>
+      <label class="fld"><span>Телефон ученика или родителя <em>для входа</em></span><input class="in num" inputmode="tel" data-f="phone" value="${esc(fmtPhone(st.phone))}" placeholder="+7 (___) ___-__-__"></label>
+      <label class="fld"><span>Цель</span><input class="in" data-f="goal" value="${esc(st.goal)}" placeholder="английский, подготовка к ЕГЭ"></label>
+      <div class="fld"><span>Дни недели</span><div class="days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-act="day" data-d="${d}" aria-pressed="${st.days.includes(d)}">${WD[d]}</button>`).join('')}</div></div>
+      <div class="fld"><span>Время</span>${timesHtml(st)}</div>
+      <div class="fld"><span>Оплата сразу</span><div class="seg" style="margin-top:0">${[[0, 'Пока нет'], [4, 'Пакет 4'], [8, 'Пакет 8']].map(([n, t]) => `<button data-act="spack" data-n="${n}" aria-pressed="${st.pack === n}">${t}</button>`).join('')}</div></div>
+      <div class="info r" id="err" hidden style="color:var(--red);font-weight:600">Нужно имя</div>
+      <button class="btn main wide" data-act="savestudent">Добавить ученика</button>`;
+  } else if (st.type === 'addprog') {
+    h = `<h3>Результат</h3><div class="shd">${esc(s.name)} · раздел ЕГЭ</div>
+      <div class="fld"><span>Раздел</span><div class="secs">${SECTIONS.map(([n]) => `<button data-act="sec" data-v="${n}" aria-pressed="${st.sec === n}">${n}</button>`).join('')}</div></div>
+      <div class="two"><label class="fld"><span>Балл</span><input class="in num" inputmode="numeric" data-f="score" value="${esc(st.score)}" placeholder="0"></label>
+      <label class="fld"><span>Из</span><input class="in num" inputmode="numeric" data-f="max" value="${esc(st.max)}"></label>
+      <label class="fld"><span>Дата</span><input class="in num" type="date" data-f="date" value="${st.date}"></label></div>
+      <div class="info" id="err" hidden style="color:var(--red);font-weight:600"></div>
+      <button class="btn main wide" data-act="saveprog">Добавить результат</button>`;
+  } else if (st.type === 'addmock') {
+    h = `<h3>Пробник</h3><div class="shd">${esc(s.name)}</div>
+      <div class="two"><label class="fld"><span>Первичный</span><input class="in num" inputmode="numeric" data-f="p" value="${esc(st.p)}" placeholder="0"></label>
+      <label class="fld"><span>Вторичный</span><input class="in num" inputmode="numeric" data-f="s" value="${esc(st.s)}" placeholder="0"></label></div>
+      <label class="fld"><span>Дата</span><input class="in num" type="date" data-f="date" value="${st.date}"></label>
+      <label class="fld"><span>Ссылка на проверку <em>необязательно</em></span><input class="in" data-f="link" value="${esc(st.link)}" placeholder="https://"></label>
+      <div class="info" id="err" hidden style="color:var(--red);font-weight:600"></div>
+      <button class="btn main wide" data-act="savemock">Добавить пробник</button>`;
+  }
+  if (st.type !== 'access' || !st.confirm) h += `<button class="cancel" data-act="close">Закрыть</button>`;
+  const prev = w.querySelector('.sheet');
+  const top = prev ? prev.scrollTop : 0;
+  w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${h}</div>`;
+  if (!first) { w.querySelector('.sheet').style.animation = 'none'; w.querySelector('.sheet').scrollTop = top; const m = w.querySelector('.mode'); if (m && m.dataset.k === st._lastMode) m.style.animation = 'none'; }
+  st._lastMode = st.mode;
+  w.style.animation = first ? '' : 'none';
+}
+
+/* ---------- тост с отменой ---------- */
+function toast(msg, snap) {
+  const t = document.getElementById('toast');
+  undoSnap = snap || null;
+  t.innerHTML = `<span>${msg}</span>${snap ? '<button data-act="undo">Отменить</button>' : ''}`;
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { t.classList.remove('on'); undoSnap = null; }, 4200);
+}
+
+/* ---------- ввод кода ---------- */
+function bindCode() {
+  const inp = document.getElementById('code'), ph = document.getElementById('phone');
+  if (!inp) return;
+  const paint = () => {
+    const v = inp.value;
+    document.querySelectorAll('.cell').forEach((c, i) => { c.textContent = v[i] || ''; c.classList.toggle('cur', i === Math.min(v.length, 3) && document.activeElement === inp); });
+  };
+  ph.addEventListener('input', () => {
+    ph.value = fmtPhone(ph.value);
+    if (ph.value.replace(/\D/g, '').length === 11) inp.focus();
+  });
+  inp.addEventListener('input', () => {
+    inp.value = inp.value.replace(/\D/g, '').slice(0, 4);
+    document.getElementById('codeerr').hidden = true;
+    paint();
+    if (inp.value.length === 4) {
+      /* макет: пускает с любым кодом; проверку номера и кода делает рабочая версия */
+      if (ph.value.replace(/\D/g, '').length < 11) { document.getElementById('codeerr').hidden = false; inp.value = ''; paint(); ph.focus(); return; }
+      const s = data.students.find(x => x.token === ui.stoken && x.open) || S('masha');
+      ui.stoken = s.token; auth.s[s.token] = true; save(); ui.stab = 'now'; lastScreenKey = 'x'; render();
+    }
+  });
+  inp.addEventListener('focus', paint); inp.addEventListener('blur', paint);
+  paint();
+}
+
+/* ---------- действия ---------- */
+function curSid() { return desk() ? ui.dsid : ui.sid; }
+function lessonOf(lid) { for (const s of data.students) { const l = s.lessons.find(x => x.id === lid); if (l) return [s, l]; } return [null, null]; }
+function onClick(e) {
+  const b = e.target.closest('[data-act]');
+  if (!b) { if (e.target.id === 'sheet') closeSheet(); return; }
+  const a = b.dataset.act;
+  const st = sheet;
+  switch (a) {
+    case 'role': {
+      ui.role = b.dataset.role; ui.sid = null; lastScreenKey = ''; closeSheet();
+      if (ui.role === 's') { const m = S('masha'); ui.stoken = m ? m.token : ui.stoken; history.replaceState(null, '', '#s=' + ui.stoken); }
+      else history.replaceState(null, '', location.pathname + location.search);
+      render(); break;
+    }
+    case 'reset': { try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + ':auth'); } catch (er) { } data = seed(); auth = { k: false, s: {} }; ui.sid = null; ui.dsid = 'masha'; ui.stoken = 'k7Qx9mP2vR4t'; closeSheet(); lastScreenKey = ''; render(); toast('Пример вернули к началу'); break; }
+    case 'remember': ui.remember = !(ui.remember !== false); b.setAttribute('aria-pressed', String(ui.remember)); break;
+    case 'login': {
+      const pw = document.getElementById('pw').value;
+      if (!pw.trim()) { document.getElementById('pwerr').hidden = false; return; }
+      auth.k = true;
+      if (ui.remember !== false) save(); else { store.set(KEY + ':auth', { ...auth, k: false }); }
+      render(); break;
+    }
+    case 'logout': auth.k = false; save(); ui.sid = null; render(); break;
+    case 'slogout': delete auth.s[ui.stoken]; save(); render(); break;
+    case 'ktab': ui.ktab = b.dataset.t; if (ui.sid) ui.push = -1; ui.sid = null; render(); break;
+    case 'stab': ui.stab = b.dataset.t; render(); break;
+    case 'open': ui.ktab = 'students'; if (desk()) ui.dsid = b.dataset.s; else { ui.sid = b.dataset.s; ui.push = 1; } render(); break;
+    case 'back': ui.sid = null; ui.push = -1; render(); break;
+    case 'more': ui.more[curSid()] = !ui.more[curSid()]; render(); break;
+    case 'pack': {
+      const s = S(curSid()); const n = +b.dataset.n;
+      commit(() => { s.payments.push({ date: TODAY, n }); }, `Пакет ${n} добавлен. Осталось ${Math.max(calc(s).rem + n, 0)} из ${Math.max(n, calc(s).rem + n)}`);
+      break;
+    }
+    case 'mark': case 'editpast': {
+      const [s, l] = lessonOf(b.dataset.l); if (!s) return;
+      const date = l.status === 'plan' && !isPast(l) ? l.date : (calc(s).upcoming.find(x => x.date >= TODAY) || { date: add(TODAY, 3) }).date;
+      openSheet({ type: a, sid: s.id, lid: l.id, mode: b.dataset.mode, topic: l.topic, hw: l.hw, note: l.note, date, cal: date, time: l.time, nocharge: true, burn: false });
+      break;
+    }
+    case 'edit': { const [s, l] = lessonOf(b.dataset.l); openSheet({ type: 'edit', sid: s.id, lid: l.id, date: l.date, cal: l.date, time: l.time, topic: l.topic }); break; }
+    case 'addlesson': { const s = S(curSid()); const d = add(TODAY, 1); openSheet({ type: 'addlesson', sid: s.id, date: d, cal: d, time: s.schedule.time, topic: '' }); break; }
+    case 'sched': { const s = S(curSid()); openSheet({ type: 'sched', sid: s.id, days: s.schedule.days.slice(), time: s.schedule.time }); break; }
+    case 'access': { const s = S(curSid()); openSheet({ type: 'access', sid: s.id, ph0: s.phones[0] || '', ph1: s.phones[1] || '', code: s.code, confirm: false }); break; }
+    case 'newcode': st.code = code4(); drawSheet(); break;
+    case 'saveaccess': { const s = S(st.sid); commit(() => { s.phones = [st.ph0, st.ph1].map(x => x.replace(/\D/g, '')).filter(x => x.length >= 11).map(x => '+' + x); s.code = (st.code || '').replace(/\D/g, '').slice(0, 4) || s.code; }, 'Доступ сохранён'); closeSheet(); break; }
+    case 'addstudent': openSheet({ type: 'addstudent', name: '', goal: '', days: [2, 5], time: '17:00', pack: 4 }); break;
+    case 'addprog': openSheet({ type: 'addprog', sid: curSid(), sec: 'Reading', score: '', max: '20', date: TODAY }); break;
+    case 'addmock': openSheet({ type: 'addmock', sid: curSid(), p: '', s: '', date: TODAY, link: '' }); break;
+    case 'close': closeSheet(); break;
+    case 'mode': st.mode = b.dataset.mode; drawSheet(); break;
+    case 'pickday': st.date = b.dataset.d; drawSheet(); break;
+    case 'calnav': st.cal = add(st.cal, +b.dataset.n); drawSheet(); break;
+    case 'picktime': st.time = b.dataset.t; drawSheet(); break;
+    case 'nocharge': st.nocharge = !st.nocharge; drawSheet(); break;
+    case 'burn': st.burn = b.dataset.v === '1'; drawSheet(); break;
+    case 'day': { const d = +b.dataset.d; st.days = st.days.includes(d) ? st.days.filter(x => x !== d) : [...st.days, d]; drawSheet(); break; }
+    case 'spack': st.pack = +b.dataset.n; drawSheet(); break;
+    case 'sec': st.sec = b.dataset.v; st.max = String(SECTIONS.find(x => x[0] === st.sec)[1]); drawSheet(); break;
+    case 'showcode': st.show = !st.show; drawSheet(); break;
+    case 'askrevoke': st.confirm = true; drawSheet(); break;
+    case 'noconfirm': st.confirm = false; drawSheet(); break;
+    case 'copy': { const v = b.dataset.v; try { navigator.clipboard.writeText(v).then(() => toast('Ссылка скопирована'), () => toast('Скопируйте ссылку из поля')); } catch (er) { toast('Скопируйте ссылку из поля'); } break; }
+    case 'revoke': { const s = S(st.sid); commit(() => { delete auth.s[s.token]; s.open = false; }, `Доступ для ${esc(s.name)} закрыт`); drawSheet(); break; }
+    case 'reopen': { const s = S(st.sid); commit(() => { s.token = token(); s.code = code4(); s.open = true; }, 'Доступ открыт, код ' + s.code); st.code = s.code; st.confirm = false; drawSheet(); break; }
+    case 'savemark': {
+      const s = S(st.sid); const l = s.lessons.find(x => x.id === st.lid);
+      const was = l.status;
+      commit(() => { l.status = 'done'; l.topic = st.topic.trim(); l.hw = st.hw.trim(); l.note = st.note.trim(); },
+        was === 'plan' ? `Урок отмечен. Осталось ${Math.max(calc(s).rem - 1, 0)} из ${calc(s).of}` : 'Урок сохранён');
+      closeSheet(); flash(l.id); break;
+    }
+    case 'savemove': {
+      const s = S(st.sid); const l = s.lessons.find(x => x.id === st.lid);
+      let nl;
+      commit(() => {
+        if (l.status === 'plan') { l.status = 'moved'; l.movedTo = st.date; l.burn = !st.nocharge; }
+        else { l.movedTo = st.date; }
+        nl = L(st.date, st.time, 'plan', l.topic, '', '', { from: l.date });
+        s.lessons = s.lessons.filter(x => !(x.auto && x.status === 'plan' && x.date === st.date && !x.topic));
+        s.lessons.push(nl); s.lessons.sort(byDT);
+      }, `Урок перенесён на ${longD(st.date)}, ${st.time}${st.nocharge ? '' : '. Урок списан'}`);
+      closeSheet(); flash(nl.id); break;
+    }
+    case 'savecancel': {
+      const s = S(st.sid); const l = s.lessons.find(x => x.id === st.lid);
+      commit(() => { l.status = st.burn ? 'burn' : 'free'; }, st.burn ? 'Урок отменён и списан' : 'Урок отменён без списания');
+      closeSheet(); break;
+    }
+    case 'savelesson': {
+      const s = S(st.sid); let id;
+      commit(() => {
+        if (st.type === 'edit') { const l = s.lessons.find(x => x.id === st.lid); l.date = st.date; l.time = st.time; l.topic = st.topic.trim(); l.auto = false; id = l.id; }
+        else { const nl = L(st.date, st.time, 'plan', st.topic.trim()); s.lessons.push(nl); id = nl.id; }
+        s.lessons.sort(byDT);
+      }, st.type === 'edit' ? `Урок теперь ${longD(st.date)}, ${st.time}` : `Урок добавлен: ${longD(st.date)}, ${st.time}`);
+      closeSheet(); flash(id); break;
+    }
+    case 'savesched': {
+      if (!st.days.length) return;
+      const s = S(st.sid);
+      commit(() => { s.schedule = { days: st.days.slice().sort(), time: st.time }; regen(s); }, `Расписание: ${schedText(s)}. Будущие уроки пересчитаны`);
+      closeSheet(); break;
+    }
+    case 'savestudent': {
+      if (!st.name.trim()) { document.getElementById('err').hidden = false; return; }
+      const id = uid();
+      commit(() => {
+        const s = { id, name: st.name.trim(), goal: st.goal.trim() || 'английский', token: token(), code: code4(), open: true, phones: st.phone && st.phone.replace(/\D/g, '').length === 11 ? ['+' + st.phone.replace(/\D/g, '')] : [], schedule: { days: st.days.length ? st.days : [2], time: st.time }, payments: st.pack ? [{ date: TODAY, n: st.pack }] : [], lessons: [], progress: [], mocks: [] };
+        regen(s); data.students.push(s);
+      }, `${esc(st.name.trim())} добавлен${st.pack ? ', пакет ' + st.pack : ''}`);
+      ui.ktab = 'students'; if (desk()) ui.dsid = id; else { ui.sid = id; ui.push = 1; }
+      closeSheet(); render(); break;
+    }
+    case 'saveprog': {
+      const sc = parseInt(st.score, 10), mx = parseInt(st.max, 10);
+      const err = document.getElementById('err');
+      if (!(mx > 0) || isNaN(sc) || sc < 0 || sc > mx) { err.textContent = 'Балл должен быть от 0 до ' + (mx > 0 ? mx : 'максимума'); err.hidden = false; return; }
+      const s = S(st.sid);
+      commit(() => s.progress.push({ id: uid(), date: st.date || TODAY, sec: st.sec, score: sc, max: mx }), `${st.sec}: ${sc} из ${mx}`);
+      closeSheet(); break;
+    }
+    case 'savemock': {
+      const p = parseInt(st.p, 10), sv = parseInt(st.s, 10);
+      const err = document.getElementById('err');
+      if (isNaN(p) || isNaN(sv) || p < 0 || sv < 0 || sv > 100) { err.textContent = 'Нужны оба балла, вторичный до 100'; err.hidden = false; return; }
+      const s = S(st.sid); let id;
+      commit(() => { id = uid(); s.mocks.push({ id, date: st.date || TODAY, p, s: sv, link: st.link.trim() }); }, `Пробник добавлен: ${p} / ${sv}`);
+      closeSheet(); flash(id); break;
+    }
+    case 'undo': if (undoSnap) { data = JSON.parse(undoSnap); undoSnap = null; save(); render(); document.getElementById('toast').classList.remove('on'); } break;
+  }
+}
+function flash(id) { requestAnimationFrame(() => { const el = document.querySelector(`[data-row="${id}"]`); if (el) { el.classList.add('fresh'); if (!isShot) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }); }
+function onInput(e) {
+  const f = e.target.dataset && e.target.dataset.f;
+  if (!f || !sheet) return;
+  if (f === 'ph0' || f === 'ph1' || f === 'phone') e.target.value = fmtPhone(e.target.value);
+  sheet[f] = e.target.value;
+  if (f === 'time' && e.target.value) { sheet.time = e.target.value; clearTimeout(onInput.t); onInput.t = setTimeout(() => sheet && drawSheet(), 400); }
+}
+
+/* ---------- запуск ---------- */
+function fromHash() {
+  const m = location.hash.match(/s=([A-Za-z0-9]+)/);
+  if (m) { ui.role = 's'; ui.stoken = m[1]; }
+}
+function applyShot(k) {
+  isShot = true;
+  data = seed(); auth = { k: true, s: { 'k7Qx9mP2vR4t': true } };
+  document.documentElement.classList.add('shot');
+  if (!'CIJK'.includes(k)) document.documentElement.classList.add('phone');
+  const m = S('masha');
+  const l16 = m.lessons.find(l => l.date === '2026-10-16');
+  const done16 = () => { l16.status = 'done'; l16.topic = 'Hobbies. Задание 4 устной части: фото про хобби'; l16.hw = 'Progress me, Hobbies, sections 1, 2, 5, 6. Выучить лексику про преимущества хобби'; l16.note = 'Путает since / for'; };
+  if (k === 'A') { done16(); ui.role = 's'; ui.stab = 'now'; }
+  if (k === 'B') { done16(); ui.role = 's'; ui.stab = 'hist'; document.documentElement.classList.add('long'); }
+  if (k === 'C') { ui.role = 'k'; ui.dsid = 'masha'; }
+  if (k === 'D') { ui.role = 'k'; ui.sid = 'masha'; render(); openSheet({ type: 'mark', sid: 'masha', lid: l16.id, mode: 'done', topic: l16.topic || 'Hobbies. Задание 4 устной части: фото про хобби', hw: 'Progress me, Hobbies, sections 1, 2, 5, 6. Выучить лексику про преимущества хобби', note: 'Путает since / for', date: '2026-10-20', cal: '2026-10-20', time: '17:00' }); return; }
+  if (k === 'E') { const l2 = m.lessons.find(l => l.date === '2026-10-02'); l2.status = 'plan'; ui.role = 'k'; ui.sid = 'masha'; render(); openSheet({ type: 'mark', sid: 'masha', lid: l2.id, mode: 'move', topic: '', hw: '', note: '', date: '2026-10-13', cal: '2026-10-13', time: '17:00', nocharge: true, burn: false }); return; }
+  if (k === 'F') { auth.s = {}; ui.role = 's'; }
+  if (k === 'G') { auth.k = false; ui.role = 'k'; }
+  if (k === 'H') { ui.role = 'k'; }
+  if (k === 'I') { done16(); ui.role = 's'; ui.stab = 'now'; }
+  if (k === 'J') { ui.role = 'k'; ui.dsid = 'masha'; render(); openSheet({ type: 'access', sid: 'masha', ph0: m.phones[0], ph1: m.phones[1], code: m.code, confirm: false }); return; }
+  if (k === 'K') { ui.role = 'k'; ui.dsid = 'masha'; render(); openSheet({ type: 'sched', sid: 'masha', days: [2, 5], time: '17:00' }); return; }
+  render();
+  if (k === 'F') { const i = document.getElementById('code'); i.value = '12'; i.dispatchEvent(new Event('input')); document.querySelectorAll('.cell')[2].classList.add('cur'); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  load();
+  fromHash();
+  document.addEventListener('click', onClick);
+  document.addEventListener('input', onInput);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sheet) closeSheet();
+    if (e.key === 'Enter' && e.target.id === 'pw') document.querySelector('[data-act="login"]').click();
+  });
+  window.addEventListener('hashchange', () => { fromHash(); lastScreenKey = ''; render(); });
+  matchMedia('(min-width: 900px)').addEventListener('change', () => { lastScreenKey = ''; render(); });
+  const shot = new URLSearchParams(location.search).get('shot');
+  if (shot) {
+    applyShot(shot);
+    const done = () => { document.title = 'H' + Math.ceil(document.documentElement.scrollHeight); if (location.search.includes('dbg')) document.title += ' ' + [300, 400, 500, 700].map(y => { const e = document.elementFromPoint(150, y); const r = e.getBoundingClientRect(); const c = getComputedStyle(e); return y + ':' + e.tagName + '.' + e.className + '[' + Math.round(r.top) + ',' + Math.round(r.height) + ',' + c.position + ',' + c.display + ',' + c.minHeight + ',' + c.height + ',' + c.flexGrow + ' parent ' + e.parentElement.className + ' ' + getComputedStyle(e.parentElement).display + ']'; }).slice(0,1).join(' '); };
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(done);
+    return;
+  }
+  render();
+});
