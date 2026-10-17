@@ -368,3 +368,13 @@ textarea.in { min-height: 76px; }
   .sheet { max-height: 90vh; padding-bottom: 0; }
   .sheet > .cancel[data-act="close"] { position: sticky; bottom: 0; margin: 10px -28px 0; width: calc(100% + 56px); background: var(--bg); box-shadow: 0 -1px 0 var(--line); min-height: 52px; z-index: 3; }
 }
+.grid td .inc { display: block; font-style: normal; font-size: 9.5px; color: var(--mute); font-weight: 500; margin-top: 1px; }
+.grid .part { line-height: 1.25; display: inline-block; }
+.ar { grid-template-columns: 1fr 56px 18px 56px; }
+.ar.hd { padding: 6px 0 2px; border-bottom: 0; }
+.ar.hd em { font-size: 11.5px; text-align: center; }
+.ar > span .mx { display: block; font-size: 12px; }
+.ar > em { text-align: center; }
+.ar.tot { grid-template-columns: 1fr auto; }
+.ar.tot b { text-align: right; font-size: 15px; }
+.ar.tot em:empty { display: none; }

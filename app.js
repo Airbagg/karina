@@ -2,7 +2,7 @@
 'use strict';
 const TODAY = '2026-10-17', NOWT = '14:00';
 /* ключ хранилища менять при каждом изменении формы данных, иначе у открывавших раньше грузится старое состояние */
-const KEY = 'karina-proto-v4';
+const KEY = 'karina-proto-v5';
 const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 const WDN = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
 const MG = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -68,9 +68,10 @@ function seed() {
       L('2026-10-27', '17:00', 'plan', '', '', '', { auto: true }),
     ],
     /* попытки слева направо, как в таблице; tot = её «Итого» дословно; даты попыток условные (в шаблоне их нет), по просьбе владельца;
-       null = задание в этой попытке не делали; такая попытка частичная, в итоги раздела не идёт */
+       ячейка: число = верно из полного максимума строки; { v, of } = верно v из of сделанных вопросов (of меньше максимума);
+       null = задание в этой попытке не делали. Попытка с null или неполной строкой частичная, в итоги раздела не идёт */
     prog: {
-      'Listening': { att: [[1, 0, 4], [2, 3, 5], [2, null, null]], tot: [5, 10, null], dates: ['2026-09-15', '2026-09-29', '2026-10-13'] },
+      'Listening': { att: [[1, 0, 4], [2, 3, 5], [2, { v: 1, of: 2 }, null]], tot: [5, 10, null], dates: ['2026-09-15', '2026-09-29', '2026-10-13'] },
       'Reading': { att: [[2, 0, 5], [null, null, 6]], tot: [7, null], dates: ['2026-09-25', '2026-10-06'] },
       'Grammar & Vocabulary': { att: [[4, 3, 3], [6, 4, 2], [6, 5, 4]], tot: [10, 12, 16], dates: ['2026-09-15', '2026-09-29', '2026-10-13'] },
       'Letter': { att: [[1, 2, 1], [1, 1, 0], [0, 2, 0], [2, 0, 0], [1, 2, 1]], tot: [4, 2, 0, 2, 4], dates: ['2026-09-15', '2026-09-18', '2026-09-25', '2026-10-06', '2026-10-13'] },
@@ -203,12 +204,19 @@ function months(list, karina) {
 }
 const pg = (s, n) => (s.prog && s.prog[n]) || { att: [], tot: [] };
 const secMax = n => SECD(n).rows.filter(r => !r[2]).reduce((a, r) => a + r[1], 0);
-function formSum(n, vals) { const a = vals.map(v => String(v ?? '').trim() === '' ? null : (parseInt(v, 10) || 0)); if (a.every(x => x == null)) return '·'; return isPartial(n, a) ? 'частично' : calcTot(n, a); }
-function calcTot(n, a) { const d = SECD(n); if (d.k1zero && a[0] === 0) return 0; return d.rows.reduce((t, r, i) => t + (r[2] ? 0 : (a[i] || 0)), 0); }
-const isPartial = (n, a) => SECD(n).rows.some((r, i) => !r[2] && a[i] == null);
+const cv = x => x == null ? null : typeof x === 'number' ? x : x.v;
+const cof = (x, mx) => x == null ? null : typeof x === 'number' ? mx : x.of;
+function cellsFromForm(n, vals, ofs) { return SECD(n).rows.map((r, i) => { if (String(vals[i] ?? '').trim() === '') return null; const of = Math.max(1, Math.min(r[1], parseInt(ofs[i], 10) || r[1])); const v = Math.max(0, Math.min(of, parseInt(vals[i], 10) || 0)); return of === r[1] ? v : { v, of }; }); }
+function doneShare(n, a) { let v = 0, o = 0; SECD(n).rows.forEach((r, i) => { if (r[2] || a[i] == null) return; v += cv(a[i]); o += cof(a[i], r[1]); }); return { v, o }; }
+function formSum(n, vals, ofs) { const a = cellsFromForm(n, vals, ofs); if (a.every(x => x == null)) return '·'; if (!isPartial(n, a)) return calcTot(n, a) + ' из ' + secMax(n); const sh = doneShare(n, a); return `частично, ${sh.v} из ${sh.o} сделанных`; }
+function calcTot(n, a) { const d = SECD(n); if (d.k1zero && cv(a[0]) === 0) return 0; return d.rows.reduce((t, r, i) => t + (r[2] ? 0 : (cv(a[i]) || 0)), 0); }
+const isPartial = (n, a) => SECD(n).rows.some((r, i) => !r[2] && (a[i] == null || cof(a[i], r[1]) < r[1]));
 function allAtt(s, n) { const p = pg(s, n), mx = secMax(n); return p.att.map((a, i) => ({ a, partial: isPartial(n, a), score: isPartial(n, a) ? null : (p.tot[i] != null ? p.tot[i] : calcTot(n, a)), max: mx, date: (p.dates || [])[i] || '', i })); }
 function totals(s, n) { return allAtt(s, n).filter(e => !e.partial); }
-function taskHist(s, n, ri) { const r = SECD(n).rows[ri]; return allAtt(s, n).filter(e => e.a[ri] != null).map(e => ({ score: e.a[ri], max: r[1], date: e.date, i: e.i })); }
+function taskHist(s, n, ri) { const r = SECD(n).rows[ri]; return allAtt(s, n).filter(e => e.a[ri] != null).map(e => { const v = cv(e.a[ri]), of = cof(e.a[ri], r[1]); return { score: v, max: of, full: r[1], label: of < r[1] ? v + '/' + of : String(v), date: e.date, i: e.i }; }); }
+/* разница по доле, если в попытках делали разное число вопросов */
+function deltaT(th) { if (th.length < 2) return ''; const f = th[0], l = th[th.length - 1]; if (f.max === l.max) return delta(th); const d = Math.round((l.score / l.max - f.score / f.max) * 100); return d ? `<span class="dl ${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${d}%</span>` : ''; }
+const vo = e => e.max < e.full ? `${e.score} из ${e.max} (сделали ${e.max} из ${e.full})` : `${e.score} из ${e.max}`;
 function spark(es) {
   if (es.length < 2) return '<span class="spark"></span>';
   const W = 64, H = 22, n = es.length;
@@ -221,7 +229,7 @@ function progCompact(s, karina) {
   const rows = SEC.map(d => { const es = totals(s, d.n); const l = es[es.length - 1];
     const all = allAtt(s, d.n), lp = all[all.length - 1];
     if (!l && lp) { const ri = d.rows.findIndex((r, i) => lp.a[i] != null);
-      return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>последнее: ${esc(d.rows[ri][0])}, ${lp.a[ri]} из ${d.rows[ri][1]}${lp.date ? ', ' + dms(lp.date) : ''}</small></span><span class="spark"></span><span class="pv num"><small>частично</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }
+      return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>последнее: ${esc(d.rows[ri][0])}, ${cv(lp.a[ri])} из ${cof(lp.a[ri], d.rows[ri][1])}${lp.date ? ', ' + dms(lp.date) : ''}</small></span><span class="spark"></span><span class="pv num"><small>частично</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }
     return `<button class="prow" data-act="prog" data-sec="${d.n}" style="--sc:${d.c}"><span class="pn"><b>${d.n}</b><small>${es.length ? (lp.date ? 'последняя ' + dms(lp.date) : es.length + ' ' + plural(es.length, 'попытка', 'попытки', 'попыток')) : 'попыток нет'}</small></span>${spark(es)}<span class="pv num">${l ? `${l.score}<small> из ${l.max}</small>${delta(es)}` : '<small>нет</small>'}</span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`; }).join('');
   const mk = s.mocks[s.mocks.length - 1];
   const mock = mk ? `<button class="prow" data-act="mock" data-m="${mk.id}"><span class="pn"><b>Пробник</b><small>${mk.date ? dm(mk.date) : 'проверка работы'}</small></span><span class="pv num">${mk.p}<small> перв.</small> &nbsp;${mk.s}<small> втор.</small></span><svg class="ico chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>` : '';
@@ -230,22 +238,22 @@ function progCompact(s, karina) {
 function progressBlock(s) { return progCompact(s, false); }
 function grid(s, n) {
   const d = SECD(n), p = pg(s, n), es = allAtt(s, n);
-  const tint = (v, m) => v == null ? '' : v >= m ? 'g' : v === 0 ? 'r' : '';
+  const tint = x => x == null ? '' : cv(x) >= cof(x, 1e9) && typeof x !== 'number' ? 'g' : '';
   const head = `<tr><th></th>${es.map((e, i) => `<th>${e.date ? dms(e.date) : '&nbsp;'}<small>${i + 1}</small></th>`).join('')}</tr>`;
-  const body = d.rows.map((r, ri) => `<tr class="${r[2] ? 'sub' : ''}"><th><button data-act="task" data-row="${ri}">${esc(r[0])}</button></th>${p.att.map(a => `<td class="${tint(a[ri], r[1])}">${a[ri] == null ? '<span class="nd" title="не делали">·</span>' : a[ri] + '<small>/' + r[1] + '</small>'}</td>`).join('')}</tr>`).join('');
-  const tot = `<tr class="tot"><th>Итого</th>${es.map(e => e.partial ? '<td><span class="part">частично</span></td>' : `<td>${e.score}<small>/${e.max}</small></td>`).join('')}</tr>`;
+  const body = d.rows.map((r, ri) => `<tr class="${r[2] ? 'sub' : ''}"><th><button data-act="task" data-row="${ri}">${esc(r[0])}</button></th>${p.att.map(a => { const x = a[ri]; if (x == null) return '<td><span class="nd" title="не делали">·</span></td>'; const v = cv(x), of = cof(x, r[1]); const t = v >= of ? 'g' : v === 0 ? 'r' : ''; return `<td class="${t}"${of < r[1] ? ` title="сделали ${of} из ${r[1]}"` : ''}>${v}<small>/${of}</small>${of < r[1] ? `<i class="inc">из ${r[1]}</i>` : ''}</td>`; }).join('')}</tr>`).join('');
+  const tot = `<tr class="tot"><th>Итого</th>${es.map(e => { if (!e.partial) return `<td>${e.score}<small>/${e.max}</small></td>`; const sh = doneShare(n, e.a); return `<td><span class="part">частично<br>${sh.v} из ${sh.o} сделанных</span></td>`; }).join('')}</tr>`;
   return `<div class="gridwrap"><table class="grid num"><thead>${head}</thead><tbody>${body}${tot}</tbody></table></div>`;
 }
 function weakest(s, n) {
-  const d = SECD(n); let w = -1, wr = 2, wv = null;
-  d.rows.forEach((r, i) => { const h = taskHist(s, n, i); if (!h.length) return; const v = h[h.length - 1].score, q = v / r[1]; if (q < wr) { wr = q; w = i; wv = v; } });
-  return w < 0 || wr >= 1 ? '' : `Слабее всего по последним результатам: <b>${esc(d.rows[w][0])}, ${wv} из ${d.rows[w][1]}</b>`;
+  const d = SECD(n); let w = null, wr = 2;
+  d.rows.forEach((r, i) => { const h = taskHist(s, n, i); if (!h.length) return; const e = h[h.length - 1], q = e.score / e.max; if (q < wr) { wr = q; w = [i, e]; } });
+  return !w || wr >= 1 ? '' : `Слабее всего по последним результатам: <b>${esc(d.rows[w[0]][0])}, ${vo(w[1])}</b>`;
 }
 function chart(es) {
   const n = es.length, bw = 30, gap = Math.max(14, Math.min(28, (300 - n * bw) / Math.max(n - 1, 1))), H = 90;
   const W = n * bw + (n - 1) * gap;
   const bars = es.map((e, i) => { const h = Math.max(2, Math.round(e.score / e.max * H)); const x = i * (bw + gap);
-    return `<rect x="${x}" y="${H - h + 18}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? 'var(--ink)' : '#D9D0C6'}"/><text x="${x + bw / 2}" y="${H - h + 12}" text-anchor="middle" class="cv">${e.score}</text><text x="${x + bw / 2}" y="${H + 36}" text-anchor="middle" class="cl">${e.date ? dms(e.date) : i + 1}</text>`; }).join('');
+    return `<rect x="${x}" y="${H - h + 18}" width="${bw}" height="${h}" rx="5" fill="${i === n - 1 ? 'var(--ink)' : '#D9D0C6'}"/><text x="${x + bw / 2}" y="${H - h + 12}" text-anchor="middle" class="cv">${e.label ?? e.score}</text><text x="${x + bw / 2}" y="${H + 36}" text-anchor="middle" class="cl">${e.date ? dms(e.date) : i + 1}</text>`; }).join('');
   return `<svg class="chart" viewBox="-2 0 ${W + 4} ${H + 42}" width="${W + 4}" height="${H + 42}" role="img" aria-label="Динамика: ${es.map(e => e.score).join(', ')}"><line x1="-2" x2="${W + 2}" y1="${H + 18}" y2="${H + 18}" stroke="var(--line2)"/>${bars}</svg>`;
 }
 
@@ -533,16 +541,17 @@ function drawSheet(first) {
     if (st.task != null) {
       const r = d.rows[st.task], th = taskHist(s, st.sec, st.task), f0 = th[0], l0 = th[th.length - 1];
       h = `<button class="back" data-act="untask" style="min-height:36px;margin:-6px 0 4px">${I.back}${st.sec}</button><h3 class="sech" style="--sc:${d.c}">${esc(r[0])}</h3><div class="shd">${esc(s.name)} · ${th.length ? 'делали ' + th.length + ' ' + plural(th.length, 'раз', 'раза', 'раз') : 'ещё не делали'}</div>`;
-      if (th.length) h += `<div class="pbig num">${l0.score}<small> из ${r[1]}</small>${delta(th)}</div>
-        ${th.length > 1 ? `<div class="info" style="margin-top:4px">Первый раз${f0.date ? ' ' + dm(f0.date) : ''}: ${f0.score} из ${r[1]}, последний${l0.date ? ' ' + dm(l0.date) : ''}: ${l0.score} из ${r[1]}</div>` : ''}
+      if (th.length) h += `<div class="pbig num">${l0.score}<small> из ${l0.max}</small>${deltaT(th)}</div>
+        ${l0.max < r[1] ? `<div class="info" style="margin-top:2px">в последний раз сделали ${l0.max} из ${r[1]} вопросов</div>` : ''}
+        ${th.length > 1 ? `<div class="info" style="margin-top:4px">Первый раз${f0.date ? ' ' + dm(f0.date) : ''}: ${vo(f0)}, последний${l0.date ? ' ' + dm(l0.date) : ''}: ${vo(l0)}</div>` : ''}
         <div class="chartbox">${chart(th)}</div>
-        <div class="opts" style="margin-top:6px">${th.map(e => `<div class="setrow"><span class="k">${e.date ? dm(e.date) + ' · ' : ''}попытка ${e.i + 1}</span><b class="num">${e.score} <span style="color:var(--mute);font-weight:500">из ${r[1]}</span></b></div>`).join('')}</div>`;
+        <div class="opts" style="margin-top:6px">${th.map(e => `<div class="setrow"><span class="k">${e.date ? dm(e.date) + ' · ' : ''}попытка ${e.i + 1}</span><b class="num">${e.score} <span style="color:var(--mute);font-weight:500">из ${e.max}${e.max < r[1] ? `, сделали ${e.max} из ${r[1]}` : ''}</span></b></div>`).join('')}</div>`;
     } else
     if (st.adding) {
-      const sum = formSum(st.sec, st.vals);
-      h += `<label class="fld"><span>Попытка ${es.length + 1} · дата</span><input class="in num" type="date" data-f="adate" value="${st.adate}" style="max-width:200px"></label><div class="attf" style="margin-top:12px">${d.rows.map((r, i) => `<label class="ar ${r[2] ? 'sub' : ''}"><span>${esc(r[0])}${r[2] ? ' <em>в задании 4</em>' : ''}</span><input class="in num" inputmode="numeric" data-av="${i}" value="${esc(st.vals[i])}" placeholder="0"><em>из ${r[1]}</em></label>`).join('')}
-        <div class="ar tot"><span>Итого</span><b class="num" id="attsum">${sum}</b><em>из ${secMax(st.sec)}</em></div></div>
-        <div class="info">Пустое поле = задание не делали. Итого считается, только когда заполнены все задания.${d.k1zero ? ' Если РКЗ 0, итог 0, как в ЕГЭ.' : ''}</div>
+      const sum = formSum(st.sec, st.vals, st.ofs);
+      h += `<label class="fld"><span>Попытка ${es.length + 1} · дата</span><input class="in num" type="date" data-f="adate" value="${st.adate}" style="max-width:200px"></label><div class="attf" style="margin-top:12px"><div class="ar hd"><span></span><em>верно</em><em></em><em>сделали</em></div>${d.rows.map((r, i) => `<div class="ar ${r[2] ? 'sub' : ''}"><span>${esc(r[0])}${r[2] ? ' <em>в задании 4</em>' : ''}<em class="mx">вопросов ${r[1]}</em></span><input class="in num" inputmode="numeric" data-av="${i}" value="${esc(st.vals[i])}" placeholder="·" aria-label="${esc(r[0])}: верно"><em>из</em><input class="in num" inputmode="numeric" data-ao="${i}" value="${esc(st.ofs[i])}" aria-label="${esc(r[0])}: сколько сделали"></div>`).join('')}
+        <div class="ar tot"><span>Итого</span><b class="num" id="attsum">${sum}</b></div></div>
+        <div class="info">Пустое «верно» = задание не делали. «Сделали» можно уменьшить, если решали не все вопросы. Итого считается, только когда все задания сделаны полностью.${d.k1zero ? ' Если РКЗ 0, итог 0, как в ЕГЭ.' : ''}</div>
         <button class="btn main wide" data-act="saveatt">Сохранить попытку</button><button class="cancel" data-act="noatt">Не добавлять</button>`;
     } else {
       const allA = allAtt(s, st.sec);
@@ -668,13 +677,13 @@ function onClick(e) {
     case 'close': closeSheet(); break;
     case 'prog': { const s = (ui.role === 's' && data.students.find(x => x.token === ui.stoken)) || S(curSid()); openSheet({ type: 'prog', sid: s.id, sec: b.dataset.sec, adding: false, vals: [] }); break; }
     case 'mock': { const s = (ui.role === 's' && data.students.find(x => x.token === ui.stoken)) || S(curSid()); openSheet({ type: 'mock', sid: s.id, mid: b.dataset.m }); break; }
-    case 'addatt': st.adding = true; st.adate = TODAY; st.vals = SECD(st.sec).rows.map(() => ''); drawSheet(); break;
+    case 'addatt': st.adding = true; st.adate = TODAY; st.vals = SECD(st.sec).rows.map(() => ''); st.ofs = SECD(st.sec).rows.map(r => String(r[1])); drawSheet(); break;
     case 'task': st.task = +b.dataset.row; drawSheet(); break;
     case 'untask': st.task = null; drawSheet(); break;
     case 'noatt': st.adding = false; drawSheet(); break;
     case 'saveatt': {
       const s = S(st.sid), d = SECD(st.sec);
-      const a = d.rows.map((r, i) => String(st.vals[i] ?? '').trim() === '' ? null : Math.max(0, Math.min(r[1], parseInt(st.vals[i], 10) || 0)));
+      const a = cellsFromForm(st.sec, st.vals, st.ofs);
       if (a.every(x => x == null)) { toast('Заполните хотя бы одно задание'); return; }
       commit(() => { s.prog = s.prog || {}; const p = s.prog[st.sec] = s.prog[st.sec] || { att: [], tot: [] }; p.att.push(a); p.tot.push(null); p.dates = p.dates || []; while (p.dates.length < p.att.length - 1) p.dates.push(''); p.dates.push(st.adate || TODAY); }, `${st.sec}: попытка ${pg(s, st.sec).att.length + 1}${isPartial(st.sec, a) ? ', частичная' : ', итого ' + calcTot(st.sec, a) + ' из ' + secMax(st.sec)}`);
       st.adding = false; drawSheet(); break;
@@ -755,7 +764,7 @@ function onClick(e) {
 }
 function flash(id) { requestAnimationFrame(() => { const el = document.querySelector(`[data-row="${id}"]`); if (el) { el.classList.add('fresh'); if (!isShot) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }); }
 function onInput(e) {
-  if (e.target.dataset && e.target.dataset.av != null && sheet) { sheet.vals[+e.target.dataset.av] = e.target.value; const el = document.getElementById('attsum'); if (el) el.textContent = formSum(sheet.sec, sheet.vals); return; }
+  if (e.target.dataset && (e.target.dataset.av != null || e.target.dataset.ao != null) && sheet) { if (e.target.dataset.av != null) sheet.vals[+e.target.dataset.av] = e.target.value; else sheet.ofs[+e.target.dataset.ao] = e.target.value; const el = document.getElementById('attsum'); if (el) el.textContent = formSum(sheet.sec, sheet.vals, sheet.ofs); return; }
   const f = e.target.dataset && e.target.dataset.f;
   if (!f || !sheet) return;
   if (f === 'ph0' || f === 'ph1' || f === 'phone') e.target.value = fmtPhone(e.target.value);
@@ -787,7 +796,7 @@ function applyShot(k) {
   if (k === 'G2') { ui.role = 's'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', adding: false, vals: [] }); return; }
   if (k === 'L') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Listening', adding: false, vals: [] }); return; }
   if (k === 'T') { ui.role = 's'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Listening', adding: false, vals: [], task: 0 }); return; }
-  if (k === 'P') { ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', adding: true, vals: ['2', '2', '2', '1', '2'] }); return; }
+  if (k === 'P') { ui.role = 'k'; ui.sid = 'alina'; render(); openSheet({ type: 'prog', sid: 'alina', sec: 'Essay', adding: true, adate: TODAY, vals: ['2', '2', '2', '1', '2'], ofs: ['3', '3', '3', '3', '2'] }); return; }
   if (k === 'Q') { ui.role = 's'; render(); openSheet({ type: 'mock', sid: 'alina', mid: m.mocks[0].id }); return; }
   if (k === 'J') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'access', sid: 'alina', ph0: m.phones[0], ph1: m.phones[1], code: m.code, confirm: false }); return; }
   if (k === 'K') { ui.role = 'k'; ui.dsid = 'alina'; render(); openSheet({ type: 'sched', sid: 'alina', days: [2, 5], time: '17:00' }); return; }
